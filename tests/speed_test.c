@@ -24,7 +24,6 @@ last modified by Martijn Jasperse, May 2012
 
 int main( )
 {
-    int r = 0;
     uint16_t i;
     uint32_t n, m, l, x=0;
     float f;

@@ -59,19 +59,20 @@ typedef byte bool;
 #endif
 #if __LITTLE_ENDIAN__           /* have to swap for network-endian */
     #ifdef _MSC_VER
-        // MSVC builtins, http://msdn.microsoft.com/en-us/library/a3140177.aspx
+        /* MSVC builtins, http://msdn.microsoft.com/en-us/library/a3140177.aspx */
         #define BYTESWAP16   _byteswap_ushort
         #define BYTESWAP32   _byteswap_ulong
         #define BYTESWAP64   _byteswap_uint64
     #elif ( __GNUC__*100+__GNUC_MINOR__ >= 403 )
-        // GCC v4.3+ builtins, http://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
-        //http://old.nabble.com/-Bug-target-52624--New%3A-Missing-__builtin_bswap16-td33533370.html
+        /* GCC v4.3+ builtins, http://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
+			http://old.nabble.com/-Bug-target-52624--New%3A-Missing-__builtin_bswap16-td33533370.html
+		*/
         static inline unsigned short __builtin_bswap16( unsigned short a ) { return (a<<8)|(a>>8); } 
         #define BYTESWAP16   __builtin_bswap16
         #define BYTESWAP32   __builtin_bswap32
         #define BYTESWAP64   __builtin_bswap64
     #else
-        // attempt generic functions
+        /* attempt generic functions */
         #include <byteswap.h>
         #define BYTESWAP16   bswap_16
         #define BYTESWAP32   bswap_32
@@ -115,13 +116,13 @@ typedef enum { /* byte codes: NB fix, raw, array and map have multiple possibili
 } MSGPACK_TYPE_CODES;
 
 typedef struct {
-    uint32_t max;           // size of allocated buffer
-    byte *p, *buffer;       // pointer to current location, start of buffer
+    uint32_t max;           /* size of allocated buffer */
+    byte *p, *buffer;       /* pointer to current location, start of buffer */
 } msgpack_p;
 
 typedef struct {
-    uint32_t max;           // size of allocated buffer
-    const byte *p, *end;    // pointer to current location, start of buffer
+    uint32_t max;           /* size of allocated buffer */
+    const byte *p, *end;    /* pointer to current location, start of buffer */
 } msgpack_u;
 
 
@@ -184,7 +185,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_map( msgpack_u* m, uint32_t *n );
 #endif
 
 #ifdef __cplusplus
-}   // extern "C"
+}   /* extern "C" */
 #endif
 
 #endif /* MSGPACK_H */

@@ -15,11 +15,10 @@ test.c : a simple demonstration of message packing
 
 int main( )
 {
-  int8_t i, j;
+  int8_t i;
   int64_t i64;
   /* some stuff to pack */
   double pi = 3.14159265358979323846;
-  uint64_t t = time( NULL );
   char str[32] = "ABC123xyz";
   
   const byte *buffer;
@@ -31,7 +30,7 @@ int main( )
   msgpack_pack_uint16( p, 12345u );
   msgpack_pack_str( p, "pi" );
   msgpack_pack_double( p, 3.14159 );
-  msgpack_pack_int64( p, -9876543210 );
+  msgpack_pack_int64( p, -9876543210ll );
   msgpack_pack_array( p, 3 );
   for ( i = 0; i < 3; ++i )
     msgpack_pack_fix( p, -i );
