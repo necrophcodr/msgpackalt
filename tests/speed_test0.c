@@ -3,9 +3,9 @@
 MSGPACKALT :: a simple binary serialisation library
 http://code.google.com/p/msgpackalt
 ----------------------------------------------------------------------
-speed_test0.c : comparison against the original msgpack library
+speed_test0.c : performing the same speed test with the original
+					msgpack library
 ----------------------------------------------------------------------
-last modified by Martijn Jasperse, May 2012
 */
 
 #include "msgpack.h"

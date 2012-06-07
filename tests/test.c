@@ -5,7 +5,6 @@ http://code.google.com/p/msgpackalt
 ----------------------------------------------------------------------
 test.c : a simple demonstration of message packing
 ----------------------------------------------------------------------
-last modified by Martijn Jasperse, May 2012
 */
 #include <stdio.h>
 

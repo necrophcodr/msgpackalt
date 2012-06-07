@@ -1,3 +1,11 @@
+/*
+----------------------------------------------------------------------
+MSGPACKALT :: a simple binary serialisation library
+http://code.google.com/p/msgpackalt
+----------------------------------------------------------------------
+test0.c : equivalent message packing operations with original library
+----------------------------------------------------------------------
+*/
 #include "msgpack.h"
 
 #include <stdio.h>

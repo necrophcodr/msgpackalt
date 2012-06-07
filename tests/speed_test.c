@@ -3,7 +3,7 @@
 MSGPACKALT :: a simple binary serialisation library
 http://code.google.com/p/msgpackalt
 ----------------------------------------------------------------------
-speed_test.c : a simple test of packing/unpacking speed
+speed_test.c : a simple timed test of packing and unpacking
 ----------------------------------------------------------------------
 last modified by Martijn Jasperse, May 2012
 */

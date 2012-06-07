@@ -1,3 +1,12 @@
+/*
+----------------------------------------------------------------------
+MSGPACKALT :: a simple binary serialisation library
+http://code.google.com/p/msgpackalt
+----------------------------------------------------------------------
+definition of C++ interface, using overloaded operators (<< and >>)
+to simplify code syntax, with support for STL string, map and vector
+----------------------------------------------------------------------
+*/
 #ifndef MSGPACK_HPP
 #define MSGPACK_HPP
 

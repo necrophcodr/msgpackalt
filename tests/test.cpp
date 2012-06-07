@@ -5,7 +5,6 @@ http://code.google.com/p/msgpackalt
 ----------------------------------------------------------------------
 test.cpp : a demonstration of msgpackalt C++ classes
 ----------------------------------------------------------------------
-last modified by Martijn Jasperse, May 2012
 */
 #include <algorithm>
 #include <cstdio>

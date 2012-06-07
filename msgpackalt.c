@@ -1,3 +1,11 @@
+/*
+----------------------------------------------------------------------
+MSGPACKALT :: a simple binary serialisation library
+http://code.google.com/p/msgpackalt
+----------------------------------------------------------------------
+msgpackalt.c : function implementations
+----------------------------------------------------------------------
+*/
 #include "msgpackalt.h"
 
 #include <stdlib.h>

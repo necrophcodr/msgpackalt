@@ -1,3 +1,23 @@
+/*
+----------------------------------------------------------------------
+MSGPACKALT :: a simple binary serialisation library
+http://code.google.com/p/msgpackalt
+----------------------------------------------------------------------
+prototypes of msgpackalt library functions implementing the
+"Message Pack" protocol, available at
+http://wiki.msgpack.org/display/MSGPACK/Format+specification
+
+use preprocessor definitions
+	MSGPACK_INLINE to include definitions and compile inline
+	MSGPACK_BUILDDLL to export functions to dll
+
+requires one of __BYTE_ORDER__, __LITTLE_ENDIAN__ or __BIG_ENDIAN__
+to be defined to determine host byte order for byte swapping
+
+documentation and examples are available at:
+http://code.google.com/p/msgpackalt
+----------------------------------------------------------------------
+*/
 #ifndef MSGPACK_H
 #define MSGPACK_H
 
