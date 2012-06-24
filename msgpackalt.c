@@ -94,7 +94,7 @@ INLINE MSGPACK_ERR msgpack_pack_internal( msgpack_p *m, byte code, const void* p
 #define fix_t int8_t
 #define DEFINE_INT_PACK( T, MT, chk, P ) \
     MSGPACKF MSGPACK_ERR msgpack_pack_##T( msgpack_p *m, T##_t x ) \
-        { return msgpack_pack_internal( m, MSGPACK_##MT, &x, sizeof( x )); }
+        { if ( chk ) return msgpack_pack_##P( m, ( P##_t )x ); return msgpack_pack_internal( m, MSGPACK_##MT, &x, sizeof( x )); }
 DEFINE_INT_PACK( uint8,  UINT8,  x<128, fix )
 DEFINE_INT_PACK( uint16, UINT16, x<(1u<<8), uint8 )
 DEFINE_INT_PACK( uint32, UINT32, x<(1ul<<16), uint16 )
@@ -330,17 +330,20 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_uint8( msgpack_u *m, uint8_t *x )
 
 MSGPACKF MSGPACK_ERR msgpack_unpack_float( msgpack_u *m, float *x )
 {
-    if ( *m->p != MSGPACK_FLOAT )  return MSGPACK_TYPEERR;
-    *x = *( float* )++m->p; m->p += sizeof( float );
+	if ( *m->p != MSGPACK_FLOAT )  return MSGPACK_TYPEERR;
+	*( uint32_t* )x = BYTESWAP32( *( uint32_t* )++m->p );
+	m->p += sizeof( float );
     return MSGPACK_SUCCESS;
 }
 MSGPACKF MSGPACK_ERR msgpack_unpack_double( msgpack_u *m, double *x )
 {
+	uint32_t y;
     switch ( *m->p ) {
         case MSGPACK_DOUBLE:
-            *x = *( double* )++m->p; m->p += sizeof( double ); return MSGPACK_SUCCESS;
+            *( uint64_t* )x = BYTESWAP64( *( uint64_t* )++m->p ); m->p += sizeof( double ); return MSGPACK_SUCCESS;
         case MSGPACK_FLOAT:
-            *x = *( float* )++m->p; m->p += sizeof( float ); return MSGPACK_SUCCESS;
+			y = BYTESWAP32( *( uint32_t* )++m->p );
+            *x = *( float* )&y; m->p += sizeof( float ); return MSGPACK_SUCCESS;
     }
     return MSGPACK_TYPEERR;
 }
