@@ -201,7 +201,9 @@ MSGPACKF void msgpack_unpack_free( msgpack_u *m )
 
 MSGPACKF MSGPACK_TYPE_CODES msgpack_unpack_peek( const msgpack_u *m )
 {
-    const byte b = *m->p;
+	byte b;
+	if ( m->p >= m->end ) return MSGPACK_MEMERR;
+    b = *m->p;
     /* check the FIXNUMS */
     if (( b >> 7 == 0 )||( b >> 5 == 7 )) return MSGPACK_FIX;
     if (( b >> 5 == 5 )||( b == 0xda )||( b == 0xdb )) return MSGPACK_RAW;
@@ -211,22 +213,27 @@ MSGPACKF MSGPACK_TYPE_CODES msgpack_unpack_peek( const msgpack_u *m )
     return ( MSGPACK_TYPE_CODES )b;
 }
 
+#define UNPACK_CHK(m) if ( m->p >= m->end ) return MSGPACK_MEMERR
+
 MSGPACKF uint32_t msgpack_unpack_len( msgpack_u *m )
 {
-    return m->end > m->p ? m->end - m->p : 0;
+    return m->end < m->p ? 0 : m->end - m->p;
 }
 
 MSGPACKF MSGPACK_ERR msgpack_unpack_null( msgpack_u *m )
 {
-    return *m->p++ == MSGPACK_NULL ? MSGPACK_SUCCESS : MSGPACK_TYPEERR;
+	UNPACK_CHK( m );
+    if ( *m->p == MSGPACK_NULL ) { ++m->p; return MSGPACK_SUCCESS; }
+	return MSGPACK_TYPEERR;
 }
 
 MSGPACKF int msgpack_unpack_bool( msgpack_u *m )
 {
-    switch ( *m->p ) {
+	UNPACK_CHK( m );
+    switch ( *m->p++ ) {
         case MSGPACK_TRUE:  return 1;
         case MSGPACK_FALSE: return 0;
-        default:            return MSGPACK_TYPEERR;
+        default:            --m->p; return MSGPACK_TYPEERR;
     }
 }
 
@@ -235,7 +242,8 @@ MSGPACKF int msgpack_unpack_bool( msgpack_u *m )
 #define DO_UNPACK_UFIX( m, x )      if ( *m->p >> 7 == 0 ) { *x = *m->p; ++m->p; return MSGPACK_SUCCESS; }
 
 MSGPACKF MSGPACK_ERR msgpack_unpack_fix( msgpack_u *m, int8_t *x )  {
-    if (  msgpack_unpack_peek( m ) != MSGPACK_FIX ) return MSGPACK_TYPEERR;
+	UNPACK_CHK( m );
+    if ( msgpack_unpack_peek( m ) != MSGPACK_FIX ) return MSGPACK_TYPEERR;
     DO_UNPACK_FIX( m,x );
 }
 
@@ -247,6 +255,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_int64( msgpack_u *m, int64_t *x )
         case MSGPACK_INT16:     DO_UNPACK( m, int16_t, x, BYTESWAP16 );
         case MSGPACK_INT8:      DO_UNPACK( m, int8_t, x, (int8_t));
         case MSGPACK_FIX:       DO_UNPACK_FIX( m,x );
+		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
         default: break;
     }
     return MSGPACK_TYPEERR;
@@ -258,6 +267,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_int32( msgpack_u *m, int32_t *x )
         case MSGPACK_INT16:     DO_UNPACK( m, int16_t, x, BYTESWAP16 );
         case MSGPACK_INT8:      DO_UNPACK( m, int8_t, x, (int8_t));
         case MSGPACK_FIX:       DO_UNPACK_FIX( m,x );
+		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
         default: break;
     }
     return MSGPACK_TYPEERR;
@@ -268,6 +278,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_int16( msgpack_u *m, int16_t *x )
         case MSGPACK_INT16:     DO_UNPACK( m, int16_t, x, BYTESWAP16 );
         case MSGPACK_INT8:      DO_UNPACK( m, int8_t, x, (int8_t));
         case MSGPACK_FIX:       DO_UNPACK_FIX( m,x );
+		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
         default: break;
     }
     return MSGPACK_TYPEERR;
@@ -277,6 +288,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_int8( msgpack_u *m, int8_t *x )
     switch ( msgpack_unpack_peek( m )) {
         case MSGPACK_INT8:      DO_UNPACK( m, int8_t, x, (int8_t));
         case MSGPACK_FIX:       DO_UNPACK_FIX( m,x );
+		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
         default: break;
     }
     return MSGPACK_TYPEERR;
@@ -290,6 +302,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_uint64( msgpack_u *m, uint64_t *x )
         case MSGPACK_UINT16:    DO_UNPACK( m, uint16_t, x, BYTESWAP16 );
         case MSGPACK_UINT8:     DO_UNPACK( m, uint8_t, x, (uint8_t));
         case MSGPACK_FIX:       DO_UNPACK_UFIX( m,x );
+		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
         default: break;
     }
     return MSGPACK_TYPEERR;
@@ -301,6 +314,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_uint32( msgpack_u *m, uint32_t *x )
         case MSGPACK_UINT16:    DO_UNPACK( m, uint16_t, x, BYTESWAP16 );
         case MSGPACK_UINT8:     DO_UNPACK( m, uint8_t, x, (uint8_t));
         case MSGPACK_FIX:       DO_UNPACK_UFIX( m,x );
+		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
         default: break;
     }
     return MSGPACK_TYPEERR;
@@ -311,6 +325,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_uint16( msgpack_u *m, uint16_t *x )
         case MSGPACK_UINT16:    DO_UNPACK( m, uint16_t, x, BYTESWAP16 );
         case MSGPACK_UINT8:     DO_UNPACK( m, uint8_t, x, (uint8_t));
         case MSGPACK_FIX:       DO_UNPACK_UFIX( m,x );
+		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
         default: break;
     }
     return MSGPACK_TYPEERR;
@@ -320,6 +335,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_uint8( msgpack_u *m, uint8_t *x )
     switch ( msgpack_unpack_peek( m )) {
         case MSGPACK_UINT8:     DO_UNPACK( m, uint8_t, x, (uint8_t));
         case MSGPACK_FIX:       DO_UNPACK_UFIX( m,x );
+		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
         default: break;
     }
     return MSGPACK_TYPEERR;
@@ -330,6 +346,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_uint8( msgpack_u *m, uint8_t *x )
 
 MSGPACKF MSGPACK_ERR msgpack_unpack_float( msgpack_u *m, float *x )
 {
+	UNPACK_CHK( m );
 	if ( *m->p != MSGPACK_FLOAT )  return MSGPACK_TYPEERR;
 	*( uint32_t* )x = BYTESWAP32( *( uint32_t* )++m->p );
 	m->p += sizeof( float );
@@ -338,6 +355,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_float( msgpack_u *m, float *x )
 MSGPACKF MSGPACK_ERR msgpack_unpack_double( msgpack_u *m, double *x )
 {
 	uint32_t y;
+	UNPACK_CHK( m );
     switch ( *m->p ) {
         case MSGPACK_DOUBLE:
             *( uint64_t* )x = BYTESWAP64( *( uint64_t* )++m->p ); m->p += sizeof( double ); return MSGPACK_SUCCESS;
@@ -359,6 +377,7 @@ INLINE MSGPACK_ERR msgpack_unpack_arr_head( msgpack_u *m, byte c1, byte nb, byte
 }
 MSGPACKF MSGPACK_ERR msgpack_unpack_raw( msgpack_u* m, const byte **data, uint32_t *n )
 {
+	UNPACK_CHK( m );
     if ( msgpack_unpack_arr_head( m, 0xa0, 5, MSGPACK_RAW, n )) return MSGPACK_TYPEERR;
     *data = m->p;
     m->p += *n;
@@ -367,6 +386,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_raw( msgpack_u* m, const byte **data, uint32
 MSGPACKF MSGPACK_ERR msgpack_unpack_str( msgpack_u* m, char *dest, uint32_t max )
 {
     const byte *ptr; uint32_t n;
+	UNPACK_CHK( m );
     if ( msgpack_unpack_raw( m, &ptr, &n )) return MSGPACK_TYPEERR;
     if ( n >= max ) return MSGPACK_MEMERR;
     memcpy( dest, ptr, n );
@@ -375,9 +395,11 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_str( msgpack_u* m, char *dest, uint32_t max 
 }
 MSGPACKF MSGPACK_ERR msgpack_unpack_array( msgpack_u* m, uint32_t *n )
 {
+	UNPACK_CHK( m );
     return msgpack_unpack_arr_head( m, 0x90, 4, MSGPACK_ARRAY, n );
 }
 MSGPACKF MSGPACK_ERR msgpack_unpack_map( msgpack_u* m, uint32_t *n )
 {
+	UNPACK_CHK( m );
     return msgpack_unpack_arr_head( m, 0x80, 4, MSGPACK_MAP, n );
 }
