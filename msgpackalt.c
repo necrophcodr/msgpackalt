@@ -11,6 +11,8 @@ msgpackalt.c : function implementations
 #include <stdlib.h>
 #include <string.h>
 
+#define PTR_CHK(p)	if ( !p ) return MSGPACK_MEMERR;
+
 /* **************************************** MEMORY FUNCTIONS **************************************** */
 
 MSGPACKF msgpack_p* msgpack_pack_init( )
@@ -23,6 +25,7 @@ MSGPACKF msgpack_p* msgpack_pack_init( )
 
 INLINE MSGPACK_ERR msgpack_expand( msgpack_p *m, uint32_t num )
 {
+	PTR_CHK( m );
     if ( m->p + num < m->buffer + m->max )
         return MSGPACK_SUCCESS;
     else
@@ -41,6 +44,7 @@ INLINE MSGPACK_ERR msgpack_expand( msgpack_p *m, uint32_t num )
 
 MSGPACKF MSGPACK_ERR msgpack_pack_free( msgpack_p *m )
 {
+	PTR_CHK( m );
     if ( m->buffer ) { free( m->buffer ); m->p = NULL; m->buffer = NULL; }
     free( m );
     return MSGPACK_SUCCESS;
@@ -48,11 +52,13 @@ MSGPACKF MSGPACK_ERR msgpack_pack_free( msgpack_p *m )
 
 MSGPACKF uint32_t msgpack_get_len( const msgpack_p *m )
 {
+	if ( !m ) return 0;
     return m->p - m->buffer;
 }
 
 MSGPACKF MSGPACK_ERR msgpack_get_buffer( msgpack_p *m, const byte ** data, uint32_t *n )
 {
+	PTR_CHK( m );
     *data = m->buffer;
     *n = m->p - m->buffer;
     return MSGPACK_SUCCESS;
@@ -60,7 +66,9 @@ MSGPACKF MSGPACK_ERR msgpack_get_buffer( msgpack_p *m, const byte ** data, uint3
 
 MSGPACKF uint32_t msgpack_copy_to( const msgpack_p *m, byte *data, uint32_t max )
 {
-    uint32_t l = m->p - m->buffer;
+	uint32_t l;
+	if ( !m || !m->p || !data || !max ) return 0;
+    l = m->p - m->buffer;
     if ( l > max ) return 0;
     memcpy( data, m->buffer, l );
     return l;
@@ -84,7 +92,7 @@ INLINE MSGPACK_ERR msgpack_copy_bits( const void *src, void* dest, byte n )
 /* **************************************** PACKING FUNCTIONS **************************************** */
 INLINE MSGPACK_ERR msgpack_pack_internal( msgpack_p *m, byte code, const void* p, byte n )
 {
-    if ( msgpack_expand( m, n + 1 )) return MSGPACK_MEMERR;
+    if ( !m || !m->p || msgpack_expand( m, n + 1 )) return MSGPACK_MEMERR;
     *m->p = code; ++m->p;
     if ( msgpack_copy_bits( p, m->p, n )) return MSGPACK_ARGERR; else m->p += n;
     return MSGPACK_SUCCESS;
@@ -147,6 +155,7 @@ MSGPACKF MSGPACK_ERR msgpack_pack_map( msgpack_p* m, uint32_t n )
 MSGPACKF MSGPACK_ERR msgpack_prepend_header( msgpack_p *m )
 {
     const uint32_t l = msgpack_get_len( m );
+	if ( l == 0 ) return MSGPACK_MEMERR;
     /* smallest pack size */
     byte n = 5;
     if ( l + 1 < 128 )          n = 1;
@@ -180,7 +189,8 @@ MSGPACKF int msgpack_check_header( msgpack_u *m )
         uint32_t x = 0;
         msgpack_unpack_uint32( m, &x );
         return x == m->max;
-    }
+    } else if ( t < 0 )
+		return t;
     return MSGPACK_TYPEERR;
 }
 
@@ -196,13 +206,13 @@ MSGPACKF msgpack_u* msgpack_unpack_init( const byte* data, const uint32_t n )
 
 MSGPACKF void msgpack_unpack_free( msgpack_u *m )
 {
-    free( m );
+	if ( m ) free( m );
 }
 
 MSGPACKF MSGPACK_TYPE_CODES msgpack_unpack_peek( const msgpack_u *m )
 {
 	byte b;
-	if ( m->p >= m->end ) return MSGPACK_MEMERR;
+	if ( !m || ( m->p >= m->end )) return MSGPACK_MEMERR;
     b = *m->p;
     /* check the FIXNUMS */
     if (( b >> 7 == 0 )||( b >> 5 == 7 )) return MSGPACK_FIX;
@@ -213,11 +223,12 @@ MSGPACKF MSGPACK_TYPE_CODES msgpack_unpack_peek( const msgpack_u *m )
     return ( MSGPACK_TYPE_CODES )b;
 }
 
-#define UNPACK_CHK(m) if ( m->p >= m->end ) return MSGPACK_MEMERR
+#define UNPACK_CHK(m) if (( !m ) || ( m->p >= m->end )) return MSGPACK_MEMERR;
 
 MSGPACKF uint32_t msgpack_unpack_len( msgpack_u *m )
 {
-    return m->end < m->p ? 0 : m->end - m->p;
+	if ( !m || !m->p || ( m->end < m->p )) return 0;
+    return m->end - m->p;
 }
 
 MSGPACKF MSGPACK_ERR msgpack_unpack_null( msgpack_u *m )
@@ -368,7 +379,9 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_double( msgpack_u *m, double *x )
 
 INLINE MSGPACK_ERR msgpack_unpack_arr_head( msgpack_u *m, byte c1, byte nb, byte c2, uint32_t *n )
 {
-    byte b = *m->p; ++m->p; *n = 0;
+    byte b;
+	UNPACK_CHK( m );
+	b = *m->p; ++m->p; *n = 0;
     if (( b>>nb )==( c1>>nb ))  { *n = b & ~c1; }
     else if ( b == c2 )         { msgpack_copy_bits( m->p, n, 2 ); m->p += 2; }
     else if ( b == c2+1 )       { msgpack_copy_bits( m->p, n, 4 ); m->p += 4; }
@@ -403,3 +416,6 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_map( msgpack_u* m, uint32_t *n )
 	UNPACK_CHK( m );
     return msgpack_unpack_arr_head( m, 0x80, 4, MSGPACK_MAP, n );
 }
+
+#undef UNPACK_CHK
+#undef PTR_CHK

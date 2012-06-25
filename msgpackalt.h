@@ -14,7 +14,7 @@ use preprocessor definitions
 requires one of __BYTE_ORDER__, __LITTLE_ENDIAN__ or __BIG_ENDIAN__
 to be defined to determine host byte order for byte swapping
 
-documentation and examples are available at:
+further documentation and examples are available at:
 http://code.google.com/p/msgpackalt
 ----------------------------------------------------------------------
 */
@@ -88,15 +88,15 @@ typedef byte bool;
 
 
 /* **************************************** MSGPACK DEFINITIONS **************************************** */
-typedef enum { /* error codes are -ve */
-    MSGPACK_SUCCESS = 0,
-    MSGPACK_TYPEERR = -1,
-    MSGPACK_MEMERR = -2,
-    MSGPACK_ARGERR = -3
+typedef enum { 				/* -ve values indicate error */
+    MSGPACK_SUCCESS = 0,	/* no problem */
+    MSGPACK_TYPEERR = -1,	/* type code did not match expected value */
+    MSGPACK_MEMERR = -2,	/* out of memory error */
+    MSGPACK_ARGERR = -3		/* received unexpected argument */
 } MSGPACK_ERR;
 
-typedef enum { /* byte codes: NB fix, raw, array and map have multiple possibilities */
-    MSGPACK_FIX     = 0x7f,
+typedef enum { /* byte codes indicating types: NB fix, raw, array and map have multiple codes */
+    MSGPACK_FIX     = 0x7f,		/* fixnums are integers between (-32, 128) */
     MSGPACK_NULL    = 0xc0,
     MSGPACK_FALSE   = 0xc2,
     MSGPACK_TRUE    = 0xc3,
@@ -128,16 +128,31 @@ typedef struct {
 
 /* **************************************** MEMORY FUNCTIONS **************************************** */
 MSGPACKF msgpack_p* msgpack_pack_init( );
-MSGPACKF MSGPACK_ERR msgpack_pack_free( msgpack_p *m );
-MSGPACKF uint32_t msgpack_get_len( const msgpack_p *m );
-MSGPACKF MSGPACK_ERR msgpack_get_buffer( msgpack_p *m, const byte ** data, uint32_t *n );
-MSGPACKF uint32_t msgpack_copy_to( const msgpack_p *m, byte *data, uint32_t max );
+/* create a packer (msgpack_p) object, allocate some memory and return a pointer */
 
+MSGPACKF MSGPACK_ERR msgpack_pack_free( msgpack_p *m );
+/* free the packer object and its associated memory. do not reference *m after calling this function */
+
+MSGPACKF uint32_t msgpack_get_len( const msgpack_p *m );
+/* return the current length of the packed buffer */
+
+MSGPACKF MSGPACK_ERR msgpack_get_buffer( msgpack_p *m, const byte ** data, uint32_t *n );
+/* stores a pointer to the buffer memory in "data" and the length of the packed buffer in "n". do not modify the buffer directly */
+
+MSGPACKF uint32_t msgpack_copy_to( const msgpack_p *m, void *data, uint32_t max );
+/* copies the internal buffer into the user-specified buffer "data" with length "max", returning the number of bytes copied.
+   note that if the buffer is to small to contain the packed message, no copy is performed.  */
 
 /* **************************************** PACKING FUNCTIONS **************************************** */
+/* the packing function pack the given variable into the buffer. if the value can be stored in a smaller
+   representation, it is packed in the smallest form that does not produce loss of data
+      e.g. uint32_t x = 64 gets automatically stored as a fixnum (1 byte) not uint32 (5 bytes)
+   similar automatic conversion is performed on unpacking to ensure seamless conversion
+*/
+/* base types ------------------------- */
 MSGPACKF MSGPACK_ERR msgpack_pack_null( msgpack_p* m );
 MSGPACKF MSGPACK_ERR msgpack_pack_bool( msgpack_p* m, bool x );
-MSGPACKF MSGPACK_ERR msgpack_pack_fix( msgpack_p* m, int8_t x );
+MSGPACKF MSGPACK_ERR msgpack_pack_fix( msgpack_p* m, int8_t x );   /* -32 < x < 128 */
 MSGPACKF MSGPACK_ERR msgpack_pack_int8( msgpack_p *m, int8_t x );
 MSGPACKF MSGPACK_ERR msgpack_pack_int16( msgpack_p *m, int16_t x );
 MSGPACKF MSGPACK_ERR msgpack_pack_int32( msgpack_p *m, int32_t x );
@@ -148,20 +163,37 @@ MSGPACKF MSGPACK_ERR msgpack_pack_uint32( msgpack_p *m, uint32_t x );
 MSGPACKF MSGPACK_ERR msgpack_pack_uint64( msgpack_p *m, uint64_t x );
 MSGPACKF MSGPACK_ERR msgpack_pack_float( msgpack_p *m, float x );
 MSGPACKF MSGPACK_ERR msgpack_pack_double( msgpack_p *m, double x );
+/* array types ------------------------- */
 MSGPACKF MSGPACK_ERR msgpack_pack_raw( msgpack_p* m, const byte *data, uint32_t n );
-MSGPACKF MSGPACK_ERR msgpack_pack_str( msgpack_p* m, const char *str );
+MSGPACKF MSGPACK_ERR msgpack_pack_str( msgpack_p* m, const char *str );   /* convenience wrapper for msgpack_pack_raw taking n=strlen */
 MSGPACKF MSGPACK_ERR msgpack_pack_array( msgpack_p* m, uint32_t n );
 MSGPACKF MSGPACK_ERR msgpack_pack_map( msgpack_p* m, uint32_t n );
-MSGPACKF MSGPACK_ERR msgpack_pack_header( msgpack_p *m );
 
+MSGPACKF MSGPACK_ERR msgpack_pack_header( msgpack_p *m );
+/* EXTENSION: packs a unsigned int value to the start of the message specifying the length of the buffer.
+   provides a way to check whether a given binary string is a msgpack'd buffer or not */
 
 /* **************************************** UNPACKING FUNCTIONS **************************************** */
-MSGPACKF msgpack_u* msgpack_unpack_init( const byte* data, const uint32_t n );
-MSGPACKF void msgpack_unpack_free( msgpack_u *m );
-MSGPACKF MSGPACK_TYPE_CODES msgpack_unpack_peek( const msgpack_u *m );
-MSGPACKF uint32_t msgpack_unpack_len( msgpack_u *m );
-MSGPACKF int msgpack_unpack_header( msgpack_u *m );
+MSGPACKF msgpack_u* msgpack_unpack_init( const void* data, const uint32_t n );
+/* creates an unpacker (msgpack_u) object, to unpack the "n" byte buffer pointed to by "data"
+   note that this buffer is not copied, so "data" should not be free'd until after msgpack_unpack_free is called */
 
+MSGPACKF void msgpack_unpack_free( msgpack_u *m );
+/* frees the unpacker object. the data buffer that was being unpacked can now be safely free'd */
+
+MSGPACKF MSGPACK_TYPE_CODES msgpack_unpack_peek( const msgpack_u *m );
+/* returns the type code of the next object stored in the buffer */
+
+MSGPACKF uint32_t msgpack_unpack_len( msgpack_u *m );
+/* return the number of bytes in the buffer remaining to be unpacked */
+
+
+/* the unpacking functions check whether the next object in the buffer can be unpacked
+   into the specified data type. if possible without data loss, relevant conversion is performed.
+   If conversion is not possible, the MSGPACK_TYPEERR code is returned and the buffer is 
+   not advanced, so another attempt can be made to unpack it.
+   up-conversion of numeric types (e.g. float to double, int8 to int64) is automatic.
+*/
 MSGPACKF MSGPACK_ERR msgpack_unpack_null( msgpack_u *m );
 MSGPACKF int msgpack_unpack_bool( msgpack_u *m );
 MSGPACKF MSGPACK_ERR msgpack_unpack_fix( msgpack_u *m, int8_t *x );
@@ -180,7 +212,11 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_str( msgpack_u* m, char *dest, uint32_t max 
 MSGPACKF MSGPACK_ERR msgpack_unpack_array( msgpack_u* m, uint32_t *n );
 MSGPACKF MSGPACK_ERR msgpack_unpack_map( msgpack_u* m, uint32_t *n );
 
-#ifdef MSGPACK_INLINE
+MSGPACKF int msgpack_unpack_header( msgpack_u *m );
+/* EXTENSION: unpacks an unsigned int from the buffer and checks that it equals the length of the buffer.
+   this provides a way to check whether arbitrary data is indeed a msgpack'd buffer */
+
+#ifdef MSGPACK_INLINE	/* compiling inline so include the source code */
     #include "msgpackalt.c"
 #endif
 
