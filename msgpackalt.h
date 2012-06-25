@@ -26,103 +26,104 @@ extern "C" {
 #endif
 
 #ifdef _MSC_VER
-    #include "stdint_msc.h" /* from http://code.google.com/p/msinttypes */
+	#include "stdint_msc.h" /* from http://code.google.com/p/msinttypes */
 #else
-    #include <stdint.h>
+	#include <stdint.h>
 #endif
 #define INLINE __inline
 
 typedef uint8_t byte;
 #ifndef __cplusplus
-typedef byte bool;
+	typedef byte bool;
 #endif
 
 #ifdef MSGPACK_BUILDDLL
-    #define MSGPACKF __declspec( dllexport )
-    #ifdef MSGPACK_INLINE
-        #error Cannot compile both inline AND to DLL
-    #endif
+	#define MSGPACKF __declspec( dllexport )
+	#ifdef MSGPACK_INLINE
+	#error Cannot compile both inline AND to DLL
+	#endif
 #else
-    #ifdef MSGPACK_INLINE
-        #define MSGPACKF INLINE
-    #else
-        #define MSGPACKF 
-    #endif
+	#ifdef MSGPACK_INLINE
+	#define MSGPACKF INLINE
+	#else
+	#define MSGPACKF 
+	#endif
 #endif
 
-/* **************************************** ENDIANNESS **************************************** */
+	/* **************************************** ENDIANNESS **************************************** */
 #ifndef __LITTLE_ENDIAN__
-    #define __LITTLE_ENDIAN__ __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+	#define __LITTLE_ENDIAN__ __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #endif
 #ifndef __BIG_ENDIAN__
-    #define __BIG_ENDIAN__ __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	#define __BIG_ENDIAN__ __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #endif
 #if __LITTLE_ENDIAN__           /* have to swap for network-endian */
-    #ifdef _MSC_VER
-        /* MSVC builtins, http://msdn.microsoft.com/en-us/library/a3140177.aspx */
-        #define BYTESWAP16   _byteswap_ushort
-        #define BYTESWAP32   _byteswap_ulong
-        #define BYTESWAP64   _byteswap_uint64
-    #elif ( __GNUC__*100+__GNUC_MINOR__ >= 403 )
-        /* GCC v4.3+ builtins, http://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
+	#ifdef _MSC_VER
+	/* MSVC builtins, http://msdn.microsoft.com/en-us/library/a3140177.aspx */
+	#define BYTESWAP16   _byteswap_ushort
+	#define BYTESWAP32   _byteswap_ulong
+	#define BYTESWAP64   _byteswap_uint64
+	#elif ( __GNUC__*100+__GNUC_MINOR__ >= 403 )
+	/* GCC v4.3+ builtins, http://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
 			http://old.nabble.com/-Bug-target-52624--New%3A-Missing-__builtin_bswap16-td33533370.html
 		*/
-        static inline unsigned short __builtin_bswap16( unsigned short a ) { return (a<<8)|(a>>8); } 
-        #define BYTESWAP16   __builtin_bswap16
-        #define BYTESWAP32   __builtin_bswap32
-        #define BYTESWAP64   __builtin_bswap64
-    #else
-        /* attempt generic functions */
-        #include <byteswap.h>
-        #define BYTESWAP16   bswap_16
-        #define BYTESWAP32   bswap_32
-        #define BYTESWAP64   bswap_64
-    #endif
+	static inline unsigned short __builtin_bswap16( unsigned short a ) { return (a<<8)|(a>>8); } 
+	#define BYTESWAP16   __builtin_bswap16
+	#define BYTESWAP32   __builtin_bswap32
+	#define BYTESWAP64   __builtin_bswap64
+	#else
+	/* attempt generic functions */
+	#include <byteswap.h>
+	#define BYTESWAP16   bswap_16
+	#define BYTESWAP32   bswap_32
+	#define BYTESWAP64   bswap_64
+	#endif
 #elif __BIG_ENDIAN__ /* already network-endian */
-    #define BYTESWAP16
-    #define BYTESWAP32
-    #define BYTESWAP64
+	#define BYTESWAP16
+	#define BYTESWAP32
+	#define BYTESWAP64
 #else
-    #error Unsupported endian-ness
+	#error Unsupported endian-ness
 #endif
 
 
 /* **************************************** MSGPACK DEFINITIONS **************************************** */
 typedef enum { 				/* -ve values indicate error */
-    MSGPACK_SUCCESS = 0,	/* no problem */
-    MSGPACK_TYPEERR = -1,	/* type code did not match expected value */
-    MSGPACK_MEMERR = -2,	/* out of memory error */
-    MSGPACK_ARGERR = -3		/* received unexpected argument */
+	MSGPACK_SUCCESS = 0,	/* no problem */
+	MSGPACK_TYPEERR = -1,	/* type code did not match expected value */
+	MSGPACK_MEMERR = -2,	/* out of memory error */
+	MSGPACK_ARGERR = -3		/* received unexpected argument */
 } MSGPACK_ERR;
 
 typedef enum { /* byte codes indicating types: NB fix, raw, array and map have multiple codes */
-    MSGPACK_FIX     = 0x7f,		/* fixnums are integers between (-32, 128) */
-    MSGPACK_NULL    = 0xc0,
-    MSGPACK_FALSE   = 0xc2,
-    MSGPACK_TRUE    = 0xc3,
-    MSGPACK_FLOAT   = 0xca,
-    MSGPACK_DOUBLE  = 0xcb,
-    MSGPACK_UINT8   = 0xcc,
-    MSGPACK_UINT16  = 0xcd,
-    MSGPACK_UINT32  = 0xce,
-    MSGPACK_UINT64  = 0xcf,
-    MSGPACK_INT8    = 0xd0,
-    MSGPACK_INT16   = 0xd1,
-    MSGPACK_INT32   = 0xd2,
-    MSGPACK_INT64   = 0xd3,
-    MSGPACK_RAW     = 0xda,
-    MSGPACK_ARRAY   = 0xdc,
-    MSGPACK_MAP     = 0xde
+	MSGPACK_FIX     = 0x7f,		/* fixnums are integers between (-32, 128) */
+	MSGPACK_NULL    = 0xc0,
+	MSGPACK_FALSE   = 0xc2,
+	MSGPACK_TRUE    = 0xc3,
+	MSGPACK_FLOAT   = 0xca,
+	MSGPACK_DOUBLE  = 0xcb,
+	MSGPACK_UINT8   = 0xcc,
+	MSGPACK_UINT16  = 0xcd,
+	MSGPACK_UINT32  = 0xce,
+	MSGPACK_UINT64  = 0xcf,
+	MSGPACK_INT8    = 0xd0,
+	MSGPACK_INT16   = 0xd1,
+	MSGPACK_INT32   = 0xd2,
+	MSGPACK_INT64   = 0xd3,
+	MSGPACK_RAW     = 0xda,
+	MSGPACK_ARRAY   = 0xdc,
+	MSGPACK_MAP     = 0xde
 } MSGPACK_TYPE_CODES;
 
 typedef struct {
-    uint32_t max;           /* size of allocated buffer */
-    byte *p, *buffer;       /* pointer to current location, start of buffer */
+	uint32_t max;           /* size of allocated buffer */
+	byte *p, *buffer;       /* pointer to current location, start of buffer */
 } msgpack_p;
 
 typedef struct {
-    uint32_t max;           /* size of allocated buffer */
-    const byte *p, *end;    /* pointer to current location, start of buffer */
+	uint32_t max;           /* size of allocated buffer */
+	const byte *p, *end;    /* pointer to current location, start of buffer */
+	byte flags;
 } msgpack_u;
 
 
@@ -141,13 +142,13 @@ MSGPACKF MSGPACK_ERR msgpack_get_buffer( msgpack_p *m, const byte ** data, uint3
 
 MSGPACKF uint32_t msgpack_copy_to( const msgpack_p *m, void *data, uint32_t max );
 /* copies the internal buffer into the user-specified buffer "data" with length "max", returning the number of bytes copied.
-   note that if the buffer is to small to contain the packed message, no copy is performed.  */
+	note that if the buffer is to small to contain the packed message, no copy is performed.  */
 
 /* **************************************** PACKING FUNCTIONS **************************************** */
 /* the packing function pack the given variable into the buffer. if the value can be stored in a smaller
-   representation, it is packed in the smallest form that does not produce loss of data
-      e.g. uint32_t x = 64 gets automatically stored as a fixnum (1 byte) not uint32 (5 bytes)
-   similar automatic conversion is performed on unpacking to ensure seamless conversion
+	representation, it is packed in the smallest form that does not produce loss of data
+	e.g. uint32_t x = 64 gets automatically stored as a fixnum (1 byte) not uint32 (5 bytes)
+	similar automatic conversion is performed on unpacking to ensure seamless conversion
 */
 /* base types ------------------------- */
 MSGPACKF MSGPACK_ERR msgpack_pack_null( msgpack_p* m );
@@ -169,14 +170,14 @@ MSGPACKF MSGPACK_ERR msgpack_pack_str( msgpack_p* m, const char *str );   /* con
 MSGPACKF MSGPACK_ERR msgpack_pack_array( msgpack_p* m, uint32_t n );
 MSGPACKF MSGPACK_ERR msgpack_pack_map( msgpack_p* m, uint32_t n );
 
-MSGPACKF MSGPACK_ERR msgpack_pack_header( msgpack_p *m );
+	MSGPACKF MSGPACK_ERR msgpack_pack_header( msgpack_p *m );
 /* EXTENSION: packs a unsigned int value to the start of the message specifying the length of the buffer.
-   provides a way to check whether a given binary string is a msgpack'd buffer or not */
+provides a way to check whether a given binary string is a msgpack'd buffer or not */
 
 /* **************************************** UNPACKING FUNCTIONS **************************************** */
 MSGPACKF msgpack_u* msgpack_unpack_init( const void* data, const uint32_t n );
 /* creates an unpacker (msgpack_u) object, to unpack the "n" byte buffer pointed to by "data"
-   note that this buffer is not copied, so "data" should not be free'd until after msgpack_unpack_free is called */
+note that this buffer is not copied, so "data" should not be free'd until after msgpack_unpack_free is called */
 
 MSGPACKF void msgpack_unpack_free( msgpack_u *m );
 /* frees the unpacker object. the data buffer that was being unpacked can now be safely free'd */
@@ -187,12 +188,15 @@ MSGPACKF MSGPACK_TYPE_CODES msgpack_unpack_peek( const msgpack_u *m );
 MSGPACKF uint32_t msgpack_unpack_len( msgpack_u *m );
 /* return the number of bytes in the buffer remaining to be unpacked */
 
+MSGPACKF MSGPACK_ERR msgpack_unpack_append( msgpack_u *m, const void* data, const uint32_t n );
+/* appends more data to the end of the buffer for unpacking */
+
 
 /* the unpacking functions check whether the next object in the buffer can be unpacked
-   into the specified data type. if possible without data loss, relevant conversion is performed.
-   If conversion is not possible, the MSGPACK_TYPEERR code is returned and the buffer is 
-   not advanced, so another attempt can be made to unpack it.
-   up-conversion of numeric types (e.g. float to double, int8 to int64) is automatic.
+into the specified data type. if possible without data loss, relevant conversion is performed.
+If conversion is not possible, the MSGPACK_TYPEERR code is returned and the buffer is 
+not advanced, so another attempt can be made to unpack it.
+up-conversion of numeric types (e.g. float to double, int8 to int64) is automatic.
 */
 MSGPACKF MSGPACK_ERR msgpack_unpack_null( msgpack_u *m );
 MSGPACKF int msgpack_unpack_bool( msgpack_u *m );
@@ -214,10 +218,10 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_map( msgpack_u* m, uint32_t *n );
 
 MSGPACKF int msgpack_unpack_header( msgpack_u *m );
 /* EXTENSION: unpacks an unsigned int from the buffer and checks that it equals the length of the buffer.
-   this provides a way to check whether arbitrary data is indeed a msgpack'd buffer */
+this provides a way to check whether arbitrary data is indeed a msgpack'd buffer */
 
 #ifdef MSGPACK_INLINE	/* compiling inline so include the source code */
-    #include "msgpackalt.c"
+	#include "msgpackalt.c"
 #endif
 
 #ifdef __cplusplus
