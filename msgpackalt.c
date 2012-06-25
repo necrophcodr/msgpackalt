@@ -155,11 +155,11 @@ MSGPACKF MSGPACK_ERR msgpack_pack_map( msgpack_p* m, uint32_t n )
 MSGPACKF MSGPACK_ERR msgpack_prepend_header( msgpack_p *m )
 {
 	const uint32_t l = msgpack_get_len( m );
-	if ( l == 0 ) return MSGPACK_MEMERR;
 	/* smallest pack size */
 	byte n = 5;
 	if ( l + 1 < 128 )          n = 1;
 	else if ( l + 3 < 65536 )   n = 3;
+	if ( l == 0 ) return MSGPACK_MEMERR;
 	/* expand buffer */
 	if ( msgpack_expand( m,n )) return MSGPACK_MEMERR;
 	/* shift buffer for prepend */
@@ -210,7 +210,7 @@ MSGPACKF void msgpack_unpack_free( msgpack_u *m )
 	if ( m )
 	{
 		/* is there an associated buffer, and do we need to free it? */
-		if ( m->p && ( m->flags & 1 )) free( m->end - m->max );
+		if ( m->p && ( m->flags & 1 )) free(( void* )( m->end - m->max ));
 		/* free the struct itself */
 		free( m );
 	}
@@ -219,10 +219,9 @@ MSGPACKF void msgpack_unpack_free( msgpack_u *m )
 MSGPACKF MSGPACK_ERR msgpack_unpack_append( msgpack_u *m, const byte* data, const uint32_t n )
 {
 	byte *buffer, *start;
-	uint32_t l;
 	if ( !m || !m->p || !data || !n ) return MSGPACK_ARGERR;
 	/* allocate a new buffer to contain appended message */
-	start = m->end - m->max;
+	start = ( byte* )( m->end - m->max );
 	if ( m->flags & 1 ) /* realloc existing buffer */
 	{
 		buffer = ( byte* )realloc( start, m->max + n );
@@ -241,7 +240,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_append( msgpack_u *m, const byte* data, cons
 	/* copy the new segment into the new buffer */
 	memcpy( buffer + m->max, data, n );
 	/* update the pointers */
-	m->p = buffer + l;
+	m->p = buffer + ( m->p - start );
 	m->max += n;
 	m->end = buffer + m->max;
 	/* indicate the buffer needs to be free'd */
@@ -254,7 +253,7 @@ MSGPACKF MSGPACK_TYPE_CODES msgpack_unpack_peek( const msgpack_u *m )
 	byte b;
 	if ( !m || ( m->p >= m->end )) return MSGPACK_MEMERR;
 	b = *m->p;
-	/* check the FIXNUMS */
+	/* check the FIXNUM codes */
 	if (( b >> 7 == 0 )||( b >> 5 == 7 )) return MSGPACK_FIX;
 	if (( b >> 5 == 5 )||( b == 0xda )||( b == 0xdb )) return MSGPACK_RAW;
 	if (( b >> 4 == 8 )||( b == 0xdc )||( b == 0xdd )) return MSGPACK_MAP;
