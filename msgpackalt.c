@@ -439,7 +439,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_float( msgpack_u *m, float *x )
 }
 MSGPACKF MSGPACK_ERR msgpack_unpack_double( msgpack_u *m, double *x )
 {
-	uint32_t y;
+	float y;
 	UNPACK_CHK( m );
 	switch ( *m->p ) {
 		case MSGPACK_DOUBLE:
