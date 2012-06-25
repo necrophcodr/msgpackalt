@@ -170,7 +170,7 @@ MSGPACKF MSGPACK_ERR msgpack_pack_str( msgpack_p* m, const char *str );   /* con
 MSGPACKF MSGPACK_ERR msgpack_pack_array( msgpack_p* m, uint32_t n );
 MSGPACKF MSGPACK_ERR msgpack_pack_map( msgpack_p* m, uint32_t n );
 
-	MSGPACKF MSGPACK_ERR msgpack_pack_header( msgpack_p *m );
+MSGPACKF MSGPACK_ERR msgpack_pack_header( msgpack_p *m );
 /* EXTENSION: packs a unsigned int value to the start of the message specifying the length of the buffer.
 provides a way to check whether a given binary string is a msgpack'd buffer or not */
 
@@ -182,7 +182,7 @@ note that this buffer is not copied, so "data" should not be free'd until after 
 MSGPACKF void msgpack_unpack_free( msgpack_u *m );
 /* frees the unpacker object. the data buffer that was being unpacked can now be safely free'd */
 
-MSGPACKF MSGPACK_TYPE_CODES msgpack_unpack_peek( const msgpack_u *m );
+MSGPACKF int msgpack_unpack_peek( const msgpack_u *m );
 /* returns the type code of the next object stored in the buffer */
 
 MSGPACKF uint32_t msgpack_unpack_len( msgpack_u *m );

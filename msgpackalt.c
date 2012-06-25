@@ -64,7 +64,7 @@ MSGPACKF MSGPACK_ERR msgpack_get_buffer( msgpack_p *m, const byte ** data, uint3
 	return MSGPACK_SUCCESS;
 }
 
-MSGPACKF uint32_t msgpack_copy_to( const msgpack_p *m, byte *data, uint32_t max )
+MSGPACKF uint32_t msgpack_copy_to( const msgpack_p *m, void *data, uint32_t max )
 {
 	uint32_t l;
 	if ( !m || !m->p || !data || !max ) return 0;
@@ -176,7 +176,7 @@ MSGPACKF MSGPACK_ERR msgpack_prepend_header( msgpack_p *m )
 
 MSGPACKF int msgpack_check_header( msgpack_u *m )
 {
-	MSGPACK_TYPE_CODES t = msgpack_unpack_peek( m );
+	int t = msgpack_unpack_peek( m );
 	if ( t == MSGPACK_FIX ) {
 		int8_t x = 0;
 		msgpack_unpack_fix( m, &x );
@@ -195,11 +195,11 @@ MSGPACKF int msgpack_check_header( msgpack_u *m )
 }
 
 /* **************************************** UNPACKING FUNCTIONS **************************************** */
-MSGPACKF msgpack_u* msgpack_unpack_init( const byte* data, const uint32_t n )
+MSGPACKF msgpack_u* msgpack_unpack_init( const void* data, const uint32_t n )
 {
 	msgpack_u *m = ( msgpack_u* )malloc( sizeof( msgpack_u ));
-	m->p = data;
-	m->end = data + n;
+	m->p = ( byte* )data;
+	m->end = m->p + n;
 	m->max = n;
 	m->flags = 0;
 	return m;
@@ -216,7 +216,7 @@ MSGPACKF void msgpack_unpack_free( msgpack_u *m )
 	}
 }
 
-MSGPACKF MSGPACK_ERR msgpack_unpack_append( msgpack_u *m, const byte* data, const uint32_t n )
+MSGPACKF MSGPACK_ERR msgpack_unpack_append( msgpack_u *m, const void* data, const uint32_t n )
 {
 	byte *buffer, *start;
 	if ( !m || !m->p || !data || !n ) return MSGPACK_ARGERR;
@@ -248,7 +248,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_append( msgpack_u *m, const byte* data, cons
 	return MSGPACK_SUCCESS;
 }
 
-MSGPACKF MSGPACK_TYPE_CODES msgpack_unpack_peek( const msgpack_u *m )
+MSGPACKF int msgpack_unpack_peek( const msgpack_u *m )
 {
 	byte b;
 	if ( !m || ( m->p >= m->end )) return MSGPACK_MEMERR;
@@ -259,7 +259,7 @@ MSGPACKF MSGPACK_TYPE_CODES msgpack_unpack_peek( const msgpack_u *m )
 	if (( b >> 4 == 8 )||( b == 0xdc )||( b == 0xdd )) return MSGPACK_MAP;
 	if (( b >> 4 == 9 )||( b == 0xde )||( b == 0xdf )) return MSGPACK_ARRAY;
 	/* must be one of the enumeration */
-	return ( MSGPACK_TYPE_CODES )b;
+	return b;
 }
 
 #define UNPACK_CHK(m) if (( !m ) || ( m->p >= m->end )) return MSGPACK_MEMERR;

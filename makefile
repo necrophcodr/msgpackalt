@@ -11,7 +11,7 @@ CFLAGS=-Wall -pedantic -I . -Wno-long-long -O3
 all: msgpackalt.so $(basename $(wildcard tests/*.c))
 
 msgpackalt.so : msgpackalt.c msgpackalt.h
-	$(CC) -shared -o $@ $< -Wall -pedantic
+	$(CC) $(CFLAGS) -shared -o $@ $< -Wall -pedantic
 
 tests/test : tests/test.c
 tests/speed_test : tests/speed_test.c
