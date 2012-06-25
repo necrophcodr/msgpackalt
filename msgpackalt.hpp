@@ -63,7 +63,7 @@ class unpacker {
 		~unpacker( )                                    { free( this->u ); }
 		
 		uint32_t len( ) const                   { return msgpack_unpack_len( this->u ); }
-		MSGPACK_TYPE_CODES peek( ) const        { return msgpack_unpack_peek( this->u ); }
+		int peek( ) const        				{ return msgpack_unpack_peek( this->u ); }
 		
 		uint32_t append( const byte *data, uint32_t len )	{ this->check( msgpack_unpack_append( this->u, data, len )); return this->u->max; }
 		

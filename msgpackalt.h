@@ -57,34 +57,6 @@ typedef uint8_t byte;
 #ifndef __BIG_ENDIAN__
 	#define __BIG_ENDIAN__ __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #endif
-#if __LITTLE_ENDIAN__           /* have to swap for network-endian */
-	#ifdef _MSC_VER
-	/* MSVC builtins, http://msdn.microsoft.com/en-us/library/a3140177.aspx */
-	#define BYTESWAP16   _byteswap_ushort
-	#define BYTESWAP32   _byteswap_ulong
-	#define BYTESWAP64   _byteswap_uint64
-	#elif ( __GNUC__*100+__GNUC_MINOR__ >= 403 )
-	/* GCC v4.3+ builtins, http://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
-			http://old.nabble.com/-Bug-target-52624--New%3A-Missing-__builtin_bswap16-td33533370.html
-		*/
-	static inline unsigned short __builtin_bswap16( unsigned short a ) { return (a<<8)|(a>>8); } 
-	#define BYTESWAP16   __builtin_bswap16
-	#define BYTESWAP32   __builtin_bswap32
-	#define BYTESWAP64   __builtin_bswap64
-	#else
-	/* attempt generic functions */
-	#include <byteswap.h>
-	#define BYTESWAP16   bswap_16
-	#define BYTESWAP32   bswap_32
-	#define BYTESWAP64   bswap_64
-	#endif
-#elif __BIG_ENDIAN__ /* already network-endian */
-	#define BYTESWAP16
-	#define BYTESWAP32
-	#define BYTESWAP64
-#else
-	#error Unsupported endian-ness
-#endif
 
 
 /* **************************************** MSGPACK DEFINITIONS **************************************** */

@@ -7,8 +7,10 @@
 #
 CC=gcc
 CFLAGS=-Wall -pedantic -I . -Wno-long-long -O3
+#MSGPACK0=../msgpack-0.5.4
 
-all: msgpackalt.so $(basename $(wildcard tests/*.c))
+all: msgpackalt.so tests/test tests/speed_test
+#$(basename $(wildcard tests/*.c))
 
 msgpackalt.so : msgpackalt.c msgpackalt.h
 	$(CC) $(CFLAGS) -shared -o $@ $< -Wall -pedantic
@@ -16,5 +18,6 @@ msgpackalt.so : msgpackalt.c msgpackalt.h
 tests/test : tests/test.c
 tests/speed_test : tests/speed_test.c
 
-tests/%0 : tests/%0.c
-	$(CC) $(CFLAGS)	 $<	-o $@	-lmsgpack
+#### MSGPACK0 is incompatible with GCC in the default build
+#tests/%0 : tests/%0.c
+#	$(CC) $(CFLAGS) -I $(MSGPACK0)/include -L $(MSGPACK0)/lib	 $<	-o $@	-lmsgpack -lws2_32

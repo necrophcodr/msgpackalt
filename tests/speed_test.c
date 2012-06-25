@@ -27,7 +27,7 @@ int main( )
     uint16_t i;
     uint32_t n, m, l, x=0;
     float f;
-    const byte *buffer;
+    const byte *buffer = NULL;
     double elapsed;
     
     #ifdef _MSC_VER

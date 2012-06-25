@@ -21,7 +21,7 @@ int main( )
   double pi = 3.14159265358979323846;
   char str[32] = "ABC123xyz";
   
-  const byte *buffer;
+  const byte *buffer = NULL;
   uint32_t n,k;
   msgpack_u *u;
   
