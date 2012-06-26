@@ -254,30 +254,23 @@ MSGPACKF void msgpack_unpack_free( msgpack_u *m )
 
 MSGPACKF MSGPACK_ERR msgpack_unpack_append( msgpack_u *m, const void* data, const uint32_t n )
 {
-	byte *buffer, *start;
+	byte *buffer;
+	uint32_t n0;
 	if ( !m || !m->p || !data || !n ) return MSGPACK_ARGERR;
 	/* allocate a new buffer to contain appended message */
-	start = ( byte* )( m->end - m->max );
-	if ( m->flags & 1 ) /* realloc existing buffer */
-	{
-		buffer = ( byte* )realloc( start, m->max + n );
-		if ( !buffer ) return MSGPACK_MEMERR;
-	}
-	else /* create new buffer */
-	{
-		buffer = ( byte* )malloc( m->max + n );
-		/* check it worked */
-		if ( !buffer ) return MSGPACK_MEMERR;
-		/* copy the old buffer into the new one */
-		memcpy( buffer, start, m->max );
-		/* deallocate the old buffer if necesary */
-		if ( m->flags & 1 ) free( start );
-	}
+	n0 = m->end - m->p;
+	/* create new buffer */
+	buffer = ( byte* )malloc( n0 + n );
+	if ( !buffer ) return MSGPACK_MEMERR;
+	/* copy the old buffer into the new one */
+	memcpy( buffer, m->p, n0 );
+	/* deallocate the old buffer if necesary */
+	if ( m->flags & 1 ) free( m->end - m->max );
 	/* copy the new segment into the new buffer */
-	memcpy( buffer + m->max, data, n );
+	memcpy( buffer + n0, data, n );
 	/* update the pointers */
-	m->p = buffer + ( m->p - start );
-	m->max += n;
+	m->p = buffer;
+	m->max = n0 + n;
 	m->end = buffer + m->max;
 	/* indicate the buffer needs to be free'd */
 	m->flags |= 1;
