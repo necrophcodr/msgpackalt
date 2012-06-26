@@ -47,7 +47,7 @@ msgpackalt.c : function implementations
 #endif
 
 
-#define PTR_CHK(p)	if ( !p ) return MSGPACK_MEMERR;
+#define PTR_CHK(m)	if ( !m || !m->p ) return MSGPACK_ARGERR;
 
 /* **************************************** MEMORY FUNCTIONS **************************************** */
 
@@ -88,7 +88,7 @@ MSGPACKF MSGPACK_ERR msgpack_pack_free( msgpack_p *m )
 
 MSGPACKF uint32_t msgpack_get_len( const msgpack_p *m )
 {
-	if ( !m ) return 0;
+	if ( !m || !m->p ) return 0;
 	return m->p - m->buffer;
 }
 
@@ -128,7 +128,8 @@ INLINE MSGPACK_ERR msgpack_copy_bits( const void *src, void* dest, byte n )
 /* **************************************** PACKING FUNCTIONS **************************************** */
 INLINE MSGPACK_ERR msgpack_pack_internal( msgpack_p *m, byte code, const void* p, byte n )
 {
-	if ( !m || !m->p || msgpack_expand( m, n + 1 )) return MSGPACK_MEMERR;
+	if ( !m || !m->p ) return MSGPACK_ARGERR;
+	if ( msgpack_expand( m, n + 1 )) return MSGPACK_MEMERR;
 	*m->p = code; ++m->p;
 	if ( msgpack_copy_bits( p, m->p, n )) return MSGPACK_ARGERR; else m->p += n;
 	return MSGPACK_SUCCESS;
@@ -265,7 +266,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_append( msgpack_u *m, const void* data, cons
 	/* copy the old buffer into the new one */
 	memcpy( buffer, m->p, n0 );
 	/* deallocate the old buffer if necesary */
-	if ( m->flags & 1 ) free( m->end - m->max );
+	if ( m->flags & 1 ) free(( void* )( m->end - m->max ));
 	/* copy the new segment into the new buffer */
 	memcpy( buffer + n0, data, n );
 	/* update the pointers */
