@@ -62,18 +62,19 @@ MSGPACKF msgpack_p* msgpack_pack_init( )
 INLINE MSGPACK_ERR msgpack_expand( msgpack_p *m, uint32_t num )
 {
 	PTR_CHK( m );
-	if ( m->p + num < m->buffer + m->max )
-		return MSGPACK_SUCCESS;
-	else
+	if ( m->p + num > m->buffer + m->max )	/* too much for allocated buffer? */
 	{
-		uint32_t l = m->p - m->buffer;
-		byte *p = ( byte* )malloc( 2*m->max );
-		if ( !p ) return MSGPACK_MEMERR;
-		memcpy( p, m->buffer, l );
-		free( m->buffer );
-		m->buffer = p;
+		byte *p;							/* pointer for new buffer */
+		uint32_t l = m->p - m->buffer;		/* current buffer length */
+		uint32_t m2 = 2*m->max;				/* guess at next length */
+		if ( l + num > m2 ) m2 = l + num;	/* is it enough? otherwise expand to fit */
+		p = ( byte* )malloc( m2 );			/* attempt to allocate new space */
+		if ( !p ) return MSGPACK_MEMERR;	/* failed, but buffer still intact */
+		memcpy( p, m->buffer, l );			/* copy the previous buffer across */
+		free( m->buffer );					/* free the old buffer */
+		m->buffer = p;						/* updated stored values */
 		m->p = p + l;
-		m->max *= 2;
+		m->max = m2;
 	}
 	return MSGPACK_SUCCESS;
 }
