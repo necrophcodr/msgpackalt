@@ -42,7 +42,7 @@ int main( )
   printf( "Packed into %u bytes\n", n );
   
   /* unpack message */
-  u = msgpack_unpack_init( buffer, n );
+  u = msgpack_unpack_init( buffer, n, 0 );
   msgpack_unpack_uint32( u, &k );
   msgpack_unpack_str( u, str, 32 );
   msgpack_unpack_double( u, &pi );

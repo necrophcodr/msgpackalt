@@ -55,7 +55,7 @@ int main( )
         msgpack_get_buffer( p, &buffer, &n );
     
         x = 0;
-        u = msgpack_unpack_init( buffer, n );
+        u = msgpack_unpack_init( buffer, n, 0 );
         msgpack_unpack_map( u, &m );
         for ( n = 0; n < m; ++n )
         {

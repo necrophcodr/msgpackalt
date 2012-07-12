@@ -147,9 +147,10 @@ MSGPACKF MSGPACK_ERR msgpack_pack_header( msgpack_p *m );
 provides a way to check whether a given binary string is a msgpack'd buffer or not */
 
 /* **************************************** UNPACKING FUNCTIONS **************************************** */
-MSGPACKF msgpack_u* msgpack_unpack_init( const void* data, const uint32_t n );
+MSGPACKF msgpack_u* msgpack_unpack_init( const void* data, const uint32_t n, const int flags );
 /* creates an unpacker (msgpack_u) object, to unpack the "n" byte buffer pointed to by "data"
-note that this buffer is not copied, so "data" should not be free'd until after msgpack_unpack_free is called */
+if "flags" is non-zero, a copy of the data is made, else the data pointer is used directly and should not
+be free'd until after msgpack_unpack_free is called */
 
 MSGPACKF void msgpack_unpack_free( msgpack_u *m );
 /* frees the unpacker object. the data buffer that was being unpacked can now be safely free'd */

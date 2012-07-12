@@ -233,13 +233,19 @@ MSGPACKF int msgpack_check_header( msgpack_u *m )
 }
 
 /* **************************************** UNPACKING FUNCTIONS **************************************** */
-MSGPACKF msgpack_u* msgpack_unpack_init( const void* data, const uint32_t n )
+MSGPACKF msgpack_u* msgpack_unpack_init( const void* data, const uint32_t n, const int flags )
 {
 	msgpack_u *m = ( msgpack_u* )malloc( sizeof( msgpack_u ));
-	m->p = ( byte* )data;
+	if ( flags ) {
+		m->p = ( byte* )malloc( n );		/* allocate a block of memory */
+		memcpy(( byte* )m->p, data, n );	/* a non-const operation, but that's fine since it's our memory */
+		m->flags = 1;						/* indicate the memory should be free'd */
+	} else {
+		m->p = ( byte* )data;	/* use the pointer directly */
+		m->flags = 0;			/* DON'T free it */
+	}
 	m->end = m->p + n;
 	m->max = n;
-	m->flags = 0;
 	return m;
 }
 

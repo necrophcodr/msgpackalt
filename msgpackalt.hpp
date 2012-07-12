@@ -58,9 +58,12 @@ class packer {
 
 class unpacker {
 	public:
-		unpacker( const byte *buffer, uint32_t len )    { this->u = msgpack_unpack_init( buffer, len ); }
-		unpacker( const packer &p )                     { const byte *b; uint32_t n; msgpack_get_buffer( p.m, &b, &n ); this->u = msgpack_unpack_init( b,n ); }
-		~unpacker( )                                    { free( this->u ); }
+		unpacker( const byte *buffer, uint32_t len, bool copy = false )
+			{ this->u = msgpack_unpack_init( buffer, len, copy ); }
+		unpacker( const packer &p )
+			{ const byte *b; uint32_t n; msgpack_get_buffer( p.m, &b, &n ); this->u = msgpack_unpack_init( b,n,0 ); }
+		~unpacker( )
+			{ free( this->u ); }
 		
 		uint32_t len( ) const                   { return msgpack_unpack_len( this->u ); }
 		int peek( ) const        				{ return msgpack_unpack_peek( this->u ); }
