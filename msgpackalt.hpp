@@ -18,7 +18,7 @@ to simplify code syntax, with support for STL string, map and vector
 namespace msgpackalt {
 #include "msgpackalt.h"
 
-void msgpack_assert( MSGPACK_ERR code )
+INLINE void msgpack_assert( MSGPACK_ERR code )
 {
 	// interpret error codes and throw a relevant exception on error
 	switch ( code ) {
