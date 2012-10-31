@@ -167,8 +167,8 @@ class pack_dict {
 		~pack_dict( )	{ }
 		
 		// traditional interface
-		template<class T> void pack( const char* name, const T& val )
-			{ p << name << val; ++n; }
+		template<class T> pack_dict& pack( const char* name, const T& val )
+			{ p << name << val; ++n; return *this; }
 		// non-tradition interface: make sure to use the insertion operator!
 		packer &operator[]( const std::string &s )	{ ++n; return p << s; }
 		
