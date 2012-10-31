@@ -142,6 +142,7 @@ MSGPACKF MSGPACK_ERR msgpack_pack_str( msgpack_p* m, const char *str );   /* con
 MSGPACKF MSGPACK_ERR msgpack_pack_array( msgpack_p* m, uint32_t n );
 MSGPACKF MSGPACK_ERR msgpack_pack_map( msgpack_p* m, uint32_t n );
 
+MSGPACKF MSGPACK_ERR msgpack_pack_append( msgpack_p *m, const void* data, uint32_t n );
 MSGPACKF MSGPACK_ERR msgpack_pack_header( msgpack_p *m );
 /* EXTENSION: packs a unsigned int value to the start of the message specifying the length of the buffer.
 provides a way to check whether a given binary string is a msgpack'd buffer or not */
@@ -152,7 +153,7 @@ MSGPACKF msgpack_u* msgpack_unpack_init( const void* data, const uint32_t n, con
 if "flags" is non-zero, a copy of the data is made, else the data pointer is used directly and should not
 be free'd until after msgpack_unpack_free is called */
 
-MSGPACKF void msgpack_unpack_free( msgpack_u *m );
+MSGPACKF MSGPACK_ERR msgpack_unpack_free( msgpack_u *m );
 /* frees the unpacker object. the data buffer that was being unpacked can now be safely free'd */
 
 MSGPACKF int msgpack_unpack_peek( const msgpack_u *m );
@@ -188,6 +189,8 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_raw( msgpack_u* m, const byte **data, uint32
 MSGPACKF MSGPACK_ERR msgpack_unpack_str( msgpack_u* m, char *dest, uint32_t max );
 MSGPACKF MSGPACK_ERR msgpack_unpack_array( msgpack_u* m, uint32_t *n );
 MSGPACKF MSGPACK_ERR msgpack_unpack_map( msgpack_u* m, uint32_t *n );
+
+MSGPACKF int msgpack_unpack_skip( msgpack_u *m );
 
 MSGPACKF int msgpack_unpack_header( msgpack_u *m );
 /* EXTENSION: unpacks an unsigned int from the buffer and checks that it equals the length of the buffer.

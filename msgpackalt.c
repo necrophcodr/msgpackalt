@@ -79,10 +79,23 @@ INLINE MSGPACK_ERR msgpack_expand( msgpack_p *m, uint32_t num )
 	return MSGPACK_SUCCESS;
 }
 
+MSGPACKF MSGPACK_ERR msgpack_pack_append( msgpack_p *m, const void* data, uint32_t n )
+{
+	MSGPACK_ERR ret = msgpack_expand( m, n );
+	if ( ret ) return ret;
+	if ( data )
+		memcpy( m->p, data, n );
+	else
+		memset( m->p, 0, n );
+	m->p += n;
+	return MSGPACK_SUCCESS;
+}
+
 MSGPACKF MSGPACK_ERR msgpack_pack_free( msgpack_p *m )
 {
 	PTR_CHK( m );
-	if ( m->buffer ) { free( m->buffer ); m->p = NULL; m->buffer = NULL; }
+	if ( m->buffer ) free( m->buffer ); //m->p = NULL; m->buffer = NULL; }
+	memset( m, 0, sizeof( msgpack_p ));	// for sanity
 	free( m );
 	return MSGPACK_SUCCESS;
 }
@@ -179,6 +192,7 @@ MSGPACKF MSGPACK_ERR msgpack_pack_raw( msgpack_p* m, const byte *data, uint32_t 
 }
 MSGPACKF MSGPACK_ERR msgpack_pack_str( msgpack_p* m, const char *str )
 {
+	if ( !str ) return MSGPACK_ARGERR;
 	return msgpack_pack_raw( m, ( byte* )str, strlen( str ));
 }
 MSGPACKF MSGPACK_ERR msgpack_pack_array( msgpack_p* m, uint32_t n )
@@ -236,10 +250,10 @@ MSGPACKF int msgpack_check_header( msgpack_u *m )
 MSGPACKF msgpack_u* msgpack_unpack_init( const void* data, const uint32_t n, const int flags )
 {
 	msgpack_u *m = ( msgpack_u* )malloc( sizeof( msgpack_u ));
-	if ( flags ) {
-		m->p = ( byte* )malloc( n );		/* allocate a block of memory */
-		memcpy(( byte* )m->p, data, n );	/* a non-const operation, but that's fine since it's our memory */
-		m->flags = 1;						/* indicate the memory should be free'd */
+	if ( flags || !data ) {
+		m->p = ( byte* )malloc( n );			/* allocate a block of memory */
+		if ( data ) memcpy(( byte* )m->p, data, n );	/* a non-const operation, but that's fine since it's our memory */
+		m->flags = 1;							/* indicate the memory should be free'd */
 	} else {
 		m->p = ( byte* )data;	/* use the pointer directly */
 		m->flags = 0;			/* DON'T free it */
@@ -249,15 +263,67 @@ MSGPACKF msgpack_u* msgpack_unpack_init( const void* data, const uint32_t n, con
 	return m;
 }
 
-MSGPACKF void msgpack_unpack_free( msgpack_u *m )
+MSGPACKF MSGPACK_ERR msgpack_unpack_free( msgpack_u *m )
 {
 	if ( m )
 	{
 		/* is there an associated buffer, and do we need to free it? */
 		if ( m->p && ( m->flags & 1 )) free(( void* )( m->end - m->max ));
+		memset( m, 0, sizeof( msgpack_u ));	// for sanity
 		/* free the struct itself */
 		free( m );
 	}
+	return MSGPACK_SUCCESS;
+}
+
+MSGPACKF int msgpack_unpack_skip( msgpack_u *m )
+{
+	uint32_t i, n;
+	int code = msgpack_unpack_peek( m );
+	const byte *ptr = m->p;
+	if ( code < 0 ) return code;
+	switch ( code ) {
+		case MSGPACK_FIX:
+		case MSGPACK_NULL:
+		case MSGPACK_FALSE:
+		case MSGPACK_TRUE:
+			m->p += 1;
+			break;
+		case MSGPACK_UINT8:
+		case MSGPACK_INT8:
+			m->p += 2;
+			break;
+		case MSGPACK_UINT16:
+		case MSGPACK_INT16:
+			m->p += 3;
+			break;
+		case MSGPACK_FLOAT:
+		case MSGPACK_UINT32:
+		case MSGPACK_INT32:
+			m->p += 5;
+			break;
+		case MSGPACK_DOUBLE:
+		case MSGPACK_UINT64:
+		case MSGPACK_INT64:
+			m->p += 9;
+			break;
+		case MSGPACK_RAW:
+			msgpack_unpack_raw( m, NULL, NULL );
+			break;
+		case MSGPACK_ARRAY:
+			msgpack_unpack_array( m, &n );
+			for ( i = n; i > 0; --i )
+				msgpack_unpack_skip( m );
+			break;
+		case MSGPACK_MAP:
+			msgpack_unpack_map( m, &n );
+			for ( i = 2*n; i > 0; --i )
+				msgpack_unpack_skip( m );
+			break;
+		default:
+			return MSGPACK_TYPEERR;
+	}
+	return m->p - ptr;
 }
 
 MSGPACKF MSGPACK_ERR msgpack_unpack_append( msgpack_u *m, const void* data, const uint32_t n )
@@ -462,12 +528,14 @@ INLINE MSGPACK_ERR msgpack_unpack_arr_head( msgpack_u *m, byte c1, byte nb, byte
 	else                        { --m->p; return MSGPACK_TYPEERR; }
 	return MSGPACK_SUCCESS;
 }
-MSGPACKF MSGPACK_ERR msgpack_unpack_raw( msgpack_u* m, const byte **data, uint32_t *n )
+MSGPACKF MSGPACK_ERR msgpack_unpack_raw( msgpack_u* m, const byte **data, uint32_t *nout )
 {
+	uint32_t n;
 	UNPACK_CHK( m );
-	if ( msgpack_unpack_arr_head( m, 0xa0, 5, MSGPACK_RAW, n )) return MSGPACK_TYPEERR;
-	*data = m->p;
-	m->p += *n;
+	if ( msgpack_unpack_arr_head( m, 0xa0, 5, MSGPACK_RAW, &n )) return MSGPACK_TYPEERR;
+	if ( data ) *data = m->p;
+	if ( nout ) *nout = n;
+	m->p += n;
 	return MSGPACK_SUCCESS;
 }
 MSGPACKF MSGPACK_ERR msgpack_unpack_str( msgpack_u* m, char *dest, uint32_t max )
