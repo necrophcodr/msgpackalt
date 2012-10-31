@@ -31,7 +31,7 @@ int main( )
     n = buffer->size;
     printf( "%u\n", n );
     for ( k = 0; k < n; ++k )
-        printf( "%02X", ((byte*)buffer->data)[k] );
+        printf( "%02X", ((char*)buffer->data)[k] );
     printf( "\n" );
     
     msgpack_unpacked_init( &u );
