@@ -94,7 +94,7 @@ typedef struct {
 
 typedef struct {
 	uint32_t max;           /* size of allocated buffer */
-	const byte *p, *end;    /* pointer to current location, start of buffer */
+	const byte *p, *end;    /* pointer to current location, end of buffer */
 	byte flags;
 } msgpack_u;
 
@@ -148,7 +148,7 @@ MSGPACKF MSGPACK_ERR msgpack_pack_header( msgpack_p *m );
 provides a way to check whether a given binary string is a msgpack'd buffer or not */
 
 /* **************************************** UNPACKING FUNCTIONS **************************************** */
-MSGPACKF msgpack_u* msgpack_unpack_init( const void* data, const uint32_t n, const int flags );
+MSGPACKF msgpack_u* msgpack_unpack_init( const void* data, uint32_t n, const int flags );
 /* creates an unpacker (msgpack_u) object, to unpack the "n" byte buffer pointed to by "data"
 if "flags" is non-zero, a copy of the data is made, else the data pointer is used directly and should not
 be free'd until after msgpack_unpack_free is called */

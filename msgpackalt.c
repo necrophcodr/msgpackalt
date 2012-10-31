@@ -7,7 +7,7 @@ msgpackalt.c : function implementations
 ----------------------------------------------------------------------
 */
 #include "msgpackalt.h"
-
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -247,10 +247,11 @@ MSGPACKF int msgpack_check_header( msgpack_u *m )
 }
 
 /* **************************************** UNPACKING FUNCTIONS **************************************** */
-MSGPACKF msgpack_u* msgpack_unpack_init( const void* data, const uint32_t n, const int flags )
+MSGPACKF msgpack_u* msgpack_unpack_init( const void* data, uint32_t n, const int flags )
 {
 	msgpack_u *m = ( msgpack_u* )malloc( sizeof( msgpack_u ));
 	if ( flags || !data ) {
+		if ( n < 16 ) n = 16;
 		m->p = ( byte* )malloc( n );			/* allocate a block of memory */
 		if ( data ) memcpy(( byte* )m->p, data, n );	/* a non-const operation, but that's fine since it's our memory */
 		m->flags = 1;							/* indicate the memory should be free'd */
@@ -278,7 +279,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_free( msgpack_u *m )
 
 MSGPACKF int msgpack_unpack_skip( msgpack_u *m )
 {
-	uint32_t i, n;
+	uint32_t i, n, r;
 	int code = msgpack_unpack_peek( m );
 	const byte *ptr = m->p;
 	if ( code < 0 ) return code;
@@ -308,17 +309,26 @@ MSGPACKF int msgpack_unpack_skip( msgpack_u *m )
 			m->p += 9;
 			break;
 		case MSGPACK_RAW:
-			msgpack_unpack_raw( m, NULL, NULL );
+			r = msgpack_unpack_raw( m, NULL, &n );
+			if ( r < 0 ) return -1;
 			break;
 		case MSGPACK_ARRAY:
-			msgpack_unpack_array( m, &n );
+			r = msgpack_unpack_array( m, &n );
+			if ( r < 0 ) return -1;
 			for ( i = n; i > 0; --i )
-				msgpack_unpack_skip( m );
+			{
+				r = msgpack_unpack_skip( m );
+				if ( r < 0 ) return -1;
+			}
 			break;
 		case MSGPACK_MAP:
-			msgpack_unpack_map( m, &n );
+			r = msgpack_unpack_map( m, &n );
+			if ( r < 0 ) return -1;
 			for ( i = 2*n; i > 0; --i )
-				msgpack_unpack_skip( m );
+			{
+				r = msgpack_unpack_skip( m );
+				if ( r < 0 ) return -1;
+			}
 			break;
 		default:
 			return MSGPACK_TYPEERR;

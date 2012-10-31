@@ -38,28 +38,39 @@ int main( )
   std::printf( "Unpacked with %u bytes remaining\n", u.len( ));
   
   std::time_t t = time(NULL);
-  printf( "\n***** Map test *****\n" );
-  
+  printf( "\n***** Dict test *****\n" );
   p.clear( );
-  pack_dict d1, d2;
-  d1.pack( "method", "x" );
-  d1.pack( "host", "me" );
-  d1.pack( "time", std::ctime(&t));
-  d2.pack( "level", 5 );
-  d2.pack( "pri", 3u );
+  
+  // let's pack a dictionary of values -----
+  // the pack_dict object supports two syntaxes: this first example shows the object style
+  pack_dict d1;
+  d1["method"] << "simple";
+  d1["time"] << std::ctime(&t);
+  d1["level"] << 5;
+  // dictionaries can be nested too -- this second example uses the function syntax
+  pack_dict d2;
+  d2.pack( "host", "me" );
+  d2.pack( "max", 3 );
   d2.pack( "pi", 3.14159f );
   d1.pack( "params", d2 );
+  // pack that into the buffer
   p << d1;
+  
+  // print the result to screen
   s = p.string();
   std::for_each( s.begin(), s.end(), outhex );
+  puts( "" );
   
-  u = s;
-  unpack_dict ud;
-  u >> ud;
-  /*
-  for ( std::map<std::string,unpacker>::const_iterator i = ud.data.begin(); i != ud.data.end(); ++i )
-	puts( i->first.c_str() );
-  */
-  printf("\n\nDone\n");
+  // it's easy to unpack the dictionaries too, again using either function or object notation
+  unpack_dict ud(s);
+  ud.get( "method", s );
+  ud["level"] >> n;
+  // here we unpack the nested dictionary
+  unpack_dict params = ud["params"];
+  
+  // the entries in the dictionary can be directly interrogated
+  printf( "\nNames in 'params':\n" );
+  for ( unpack_dict::entry_map::const_iterator i = params.data.begin(); i != params.data.end(); ++i )
+	printf( " > %s\n", i->first.c_str( ));
   return 0;
 }
