@@ -40,7 +40,7 @@ class packer {
 		// return the number of bytes packed so far
 		uint32_t len( ) const                   { return msgpack_get_len( this->m ); }
 		// create a STL string with the contents of the buffer
-		std::string string( ) const             { const byte* b; uint32_t n; msgpack_get_buffer( this->m, &b, &n ); return std::string(( char* )b,n ); }
+		std::string string( ) const             { const byte* b = NULL; uint32_t n = 0; msgpack_get_buffer( this->m, &b, &n ); return std::string(( char* )b,n ); }
 		// return pointer to underlying struct -- internal use only
 		msgpack_p* ptr( )						{ return this->m; }
 		// "clear" the contents of the buffer
@@ -50,7 +50,6 @@ class packer {
 		void start_array( uint32_t n )		{ msgpack_assert( msgpack_pack_array( this->m, n )); }
 		
 		// ***** PACKING FUNCTIONS *****
-		//packer& operator<<( void* x )           { msgpack_assert( msgpack_pack_null( this->m )); return *this; }
 		packer& operator<<( bool b )            { msgpack_assert( msgpack_pack_bool( this->m, b )); return *this; }
 		
 		packer& operator<<( const uint8_t &x )  { msgpack_assert( msgpack_pack_uint8( this->m, x )); return *this; }
@@ -70,7 +69,10 @@ class packer {
 		packer& operator<<( const char *s )         { msgpack_assert( msgpack_pack_str( this->m, s )); return *this; }
 		
 		// append the contents of another packer object to the stream
-		packer& operator<<( const packer &p )		{ const byte* b; uint32_t n; msgpack_get_buffer( p.m, &b, &n ); msgpack_assert( msgpack_pack_append( this->m, b, n )); return *this; }
+		packer& operator<<( const packer &p )		{ const byte* b = NULL; uint32_t n = 0; msgpack_get_buffer( p.m, &b, &n ); msgpack_assert( msgpack_pack_append( this->m, b, n )); return *this; }
+		
+		packer& pack_null( )									{ msgpack_assert( msgpack_pack_null( this->m )); return *this; }
+		packer& pack_raw( const void* data, const uint32_t n )	{ msgpack_assert( msgpack_pack_raw( this->m, ( const byte* )data, n )); return *this; }
 		
 		// pack a C-style array of n points starting at the pointer address v
 		template<class T> packer& pack_array( const T* v, const uint32_t n )
