@@ -368,9 +368,9 @@ MSGPACKF int msgpack_unpack_peek( const msgpack_u *m )
 	b = *m->p;
 	/* check the FIXNUM codes */
 	if (( b >> 7 == 0 )||( b >> 5 == 7 )) return MSGPACK_FIX;
-	if (( b >> 5 == 5 )||( b == 0xda )||( b == 0xdb )) return MSGPACK_RAW;
-	if (( b >> 4 == 8 )||( b == 0xdc )||( b == 0xdd )) return MSGPACK_MAP;
-	if (( b >> 4 == 9 )||( b == 0xde )||( b == 0xdf )) return MSGPACK_ARRAY;
+	if (( b >> 5 == 5 )||( b == MSGPACK_RAW )||( b == MSGPACK_RAW+1 )) return MSGPACK_RAW;
+	if (( b >> 4 == 8 )||( b == MSGPACK_MAP )||( b == MSGPACK_MAP+1 )) return MSGPACK_MAP;
+	if (( b >> 4 == 9 )||( b == MSGPACK_ARRAY )||( b == MSGPACK_ARRAY+1 )) return MSGPACK_ARRAY;
 	/* must be one of the enumeration */
 	return b;
 }

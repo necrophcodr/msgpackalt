@@ -46,8 +46,8 @@ class packer {
 		// "clear" the contents of the buffer
 		void clear( )							{ if ( this->m ) m->p = m->buffer; }
 		
-		void start_map( uint32_t n )		{ msgpack_assert( msgpack_pack_map( this->m, n )); }
-		void start_array( uint32_t n )		{ msgpack_assert( msgpack_pack_array( this->m, n )); }
+		void start_map( uint32_t n )			{ msgpack_assert( msgpack_pack_map( this->m, n )); }
+		void start_array( uint32_t n )			{ msgpack_assert( msgpack_pack_array( this->m, n )); }
 		
 		// ***** PACKING FUNCTIONS *****
 		packer& operator<<( bool b )            { msgpack_assert( msgpack_pack_bool( this->m, b )); return *this; }
@@ -161,6 +161,36 @@ class unpacker {
 };
 
 
+#define OPERATOR_INST(x)	operator x ()	{ return this->as< x >(); }
+class packed_object {
+	public:
+		packed_object( std::string k, std::string v ):data( v ),key( k ) { }
+		packed_object( )	{ }
+		~packed_object( )	{ }
+		
+		template<class T> T as() {
+			unpacker u( this->data, false );	// we own this data so it's safe
+			T x; u >> x;
+			return x;
+		}
+		
+		OPERATOR_INST(bool)
+		OPERATOR_INST(int8_t)
+		OPERATOR_INST(int16_t)
+		OPERATOR_INST(int32_t)
+		OPERATOR_INST(int64_t)
+		OPERATOR_INST(uint8_t)
+		OPERATOR_INST(uint16_t)
+		OPERATOR_INST(uint32_t)
+		OPERATOR_INST(uint64_t)
+		OPERATOR_INST(float)
+		OPERATOR_INST(double)
+		OPERATOR_INST(std::string)
+		
+		std::string key, data;
+};
+#undef OPERATOR_INST
+
 class pack_dict {
 	/* a helper class to simplify the common use case of a string-indexed dictionary with heterogenous values
 	   i.e. something which does not work in a std::map */
@@ -173,6 +203,8 @@ class pack_dict {
 			{ p << name << val; ++n; return *this; }
 		// non-tradition interface: make sure to use the insertion operator!
 		packer &operator[]( const std::string &s )	{ ++n; return p << s; }
+		// return packed string
+		std::string string()	{ packer p; p << *this; return p.string(); }
 		
 		// add to a packer object
 		friend packer& operator<<( packer &m, const pack_dict &d )
@@ -186,16 +218,18 @@ class pack_dict {
 class unpack_dict {
 	/* a helper class to simplify unpacking a string-indexed dictionary with heterogenous values */
 	public:
-		unpack_dict( )						{ }
-		unpack_dict( const std::string &s )	{ unpacker u(s,true); u >> *this; }
-		unpack_dict( unpacker &u )			{ u >> *this; }
-		~unpack_dict( )		// default destructor: clean up any unpack objects
-			{ for ( entry_map::iterator i = data.begin(); i != data.end(); ++i ) delete i->second; }
-		typedef std::map<std::string,unpacker*> entry_map;
+		unpack_dict( )							{ }
+		unpack_dict( const std::string &s )		{ unpacker u(s,true); u >> *this; }
+		unpack_dict( const packed_object &o )	{ unpacker u(o.data,true); u >> *this; }
+		unpack_dict( unpacker &u )				{ u >> *this; }
+		~unpack_dict( )		{ }// default destructor: clean up any unpack objects
+		//	{ for ( entry_map::iterator i = data.begin(); i != data.end(); ++i ) delete i->second; }
+		typedef std::map<std::string,packed_object> entry_map;
+		typedef entry_map::const_iterator const_iterator;
 		
 		friend unpacker& operator>>( unpacker &u, unpack_dict &d )
 		{
-			int k; std::string s;
+			size_t k; std::string s;
 			// get the number of entries
 			uint32_t n = u.start_map( );
 			for ( uint32_t i = 0; i < n; ++i )
@@ -204,30 +238,32 @@ class unpack_dict {
 				k = u.skip( );	// find out how many bytes the entry is
 				if ( k < 0 ) throw std::out_of_range("failed to process map");
 				// store a new unpacker object for this entry
-				d.data[s] = new unpacker( u.ptr()->p - k, k, true ); // copy in case u is temporary
+				d.data[s] = packed_object( s, std::string(( const char* )( u.ptr()->p - k ), k ));
+				//d.data[s] = new unpacker( u.ptr()->p - k, k, true ); // copy in case u is temporary
 			}
 			return u;
 		}
 		// traditional interface: returns true is exists otherwise leaves x alone
 		template <class T> bool get( const std::string &s, T &x )
 		{
-			unpacker *u = data[s];
-			if ( !u ) return false;
-			*u >> x;
+			if ( !this->has_key( s )) return false;
+			x = this->data[s].as<T>();
 			return true;
 		}
 		// non-traditional interface: make sure to use the extraction operator!
-		unpacker& operator[]( const std::string &s )
+		packed_object& operator[]( const std::string &s )
 		{
-			unpacker *u = data[s];
-			if ( !u ) throw std::out_of_range("key does not exist in map");
-			return *u;
+			if ( !this->has_key( s )) throw std::out_of_range("key does not exist in map");
+			return this->data[s];
 		}
 		// check for a given key
 		bool has_key( const std::string &s )
 		{
 			return data.find(s) != data.end( );
 		}
+		
+		entry_map::const_iterator begin()	{ return this->data.begin(); }
+		entry_map::const_iterator end()		{ return this->data.end(); }
 		
 		entry_map data;
 };

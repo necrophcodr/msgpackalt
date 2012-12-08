@@ -10,7 +10,7 @@ test.cpp : a demonstration of msgpackalt C++ classes
 #include <cstdio>
 #include <ctime>
 
-//////#define MSGPACK_INLINE
+#define MSGPACK_INLINE
 #include "msgpackalt.hpp"
 using namespace msgpackalt;
 
@@ -64,13 +64,16 @@ int main( )
   // it's easy to unpack the dictionaries too, again using either function or object notation
   unpack_dict ud(s);
   ud.get( "method", s );
-  ud["level"] >> n;
+  n = ud["level"];
   // here we unpack the nested dictionary
-  unpack_dict params = ud["params"];
+  unpack_dict params( ud["params"] );
   
   // the entries in the dictionary can be directly interrogated
+  printf( "\nNames in message:\n" );
+  for ( unpack_dict::const_iterator i = ud.begin(); i != ud.end(); ++i )
+	printf( " > %s\n", i->first.c_str( ));
   printf( "\nNames in 'params':\n" );
-  for ( unpack_dict::entry_map::const_iterator i = params.data.begin(); i != params.data.end(); ++i )
+  for ( unpack_dict::const_iterator i = params.begin(); i != params.end(); ++i )
 	printf( " > %s\n", i->first.c_str( ));
   return 0;
 }
