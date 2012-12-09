@@ -13,6 +13,8 @@ msgpackalt.c : function implementations
 
 #if __LITTLE_ENDIAN__           /* have to swap for network-endian */
 	#ifdef _MSC_VER
+		/* shuttup msvc! */
+		#pragma warning( disable: 4127 )	/* "conditional expression is constant" */
 		/* MSVC builtins, http://msdn.microsoft.com/en-us/library/a3140177.aspx */
 		#define BYTESWAP16   _byteswap_ushort
 		#define BYTESWAP32   _byteswap_ulong
@@ -412,10 +414,10 @@ int8_t   msgpack_get_FIX( msgpack_u *m ) 		{ return ( *m->p > 128 ) ? *( int8_t*
 #define DEFINE_INT_UNPACK( T, S ) \
 	MSGPACKF MSGPACK_ERR msgpack_unpack_##T( msgpack_u *m, T##_t *x ) { \
 		const int t = msgpack_unpack_peek( m ); \
-		if      (( t == MSGPACK_##S##64 ) && ( sizeof( T##_t ) >= 8 )) *x = msgpack_get_##S##64( m ); \
-		else if (( t == MSGPACK_##S##32 ) && ( sizeof( T##_t ) >= 4 )) *x = msgpack_get_##S##32( m ); \
-		else if (( t == MSGPACK_##S##16 ) && ( sizeof( T##_t ) >= 2 )) *x = msgpack_get_##S##16( m ); \
-		else if ( t == MSGPACK_##S##8 ) *x = msgpack_get_##S##64( m ); \
+		if      (( t == MSGPACK_##S##64 ) && ( sizeof( T##_t ) >= 8 )) *x = ( T##_t )msgpack_get_##S##64( m ); \
+		else if (( t == MSGPACK_##S##32 ) && ( sizeof( T##_t ) >= 4 )) *x = ( T##_t )msgpack_get_##S##32( m ); \
+		else if (( t == MSGPACK_##S##16 ) && ( sizeof( T##_t ) >= 2 )) *x = ( T##_t )msgpack_get_##S##16( m ); \
+		else if ( t == MSGPACK_##S##8 ) *x = msgpack_get_##S##8( m ); \
 		else if (( t == MSGPACK_FIX ) && ( FIX_##S || *m->p >> 7 == 0 ))  *x = msgpack_get_FIX( m );\
 		else return MSGPACK_TYPEERR; \
 		return MSGPACK_SUCCESS; \
