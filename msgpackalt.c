@@ -32,25 +32,12 @@ msgpackalt.c : function implementations
 		#define BYTESWAP32   bswap_32
 		#define BYTESWAP64   bswap_64
 	#endif
-	/* pointer-based byte-swapping */
 	#define		BYTESWAP8
-	/*
-	INLINE void BSWAP8( const void* src, void* dest )	{ *( uint8_t* )dest = *( uint8_t* )src; }
-	INLINE void BSWAP16( const void* src, void* dest )	{ *( uint16_t* )dest = BYTESWAP16( *( uint16_t* )src ); }
-	INLINE void BSWAP32( const void* src, void* dest )	{ *( uint32_t* )dest = BYTESWAP32( *( uint32_t* )src ); }
-	INLINE void BSWAP64( const void* src, void* dest )	{ *( uint64_t* )dest = BYTESWAP64( *( uint64_t* )src ); }
-	*/
 #elif __BIG_ENDIAN__ /* already network-endian */
 	#define		BYTESWAP8
 	#define		BYTESWAP16
 	#define		BYTESWAP32
 	#define		BYTESWAP64
-	/*
-	INLINE void BSWAP8( const void* src, void* dest )	{ *( uint8_t* )dest = *( uint8_t* )src; }
-	INLINE void BSWAP16( const void* src, void* dest )	{ *( uint16_t* )dest = *( uint16_t* )src; }
-	INLINE void BSWAP32( const void* src, void* dest )	{ *( uint32_t* )dest = *( uint32_t* )src; }
-	INLINE void BSWAP64( const void* src, void* dest )	{ *( uint64_t* )dest = *( uint64_t* )src; }
-	*/
 #else
 	#error Unsupported endian-ness
 #endif
