@@ -396,10 +396,6 @@ MSGPACKF int msgpack_unpack_bool( msgpack_u *m )
 	}
 }
 
-#define DO_UNPACK( m, x, n ) 		{ *x = BYTESWAP##n(*( uint##n##_t* )++m->p); m->p += n/8; return MSGPACK_SUCCESS; }
-#define DO_UNPACK_FIX( m, x )       { *x = ( *m->p > 128 ) ? ( int8_t )*m->p : *m->p; ++m->p; return MSGPACK_SUCCESS; }
-#define DO_UNPACK_UFIX( m, x )      if ( *m->p >> 7 == 0 ) { *x = *m->p; ++m->p; return MSGPACK_SUCCESS; } else return MSGPACK_TYPEERR;
-
 uint8_t  msgpack_get_UINT8( msgpack_u *m )  	{ uint8_t x = *( uint8_t* )++m->p; ++m->p; return x; }
 uint16_t msgpack_get_UINT16( msgpack_u *m ) 	{ uint16_t x = BYTESWAP16( *( uint16_t* )++m->p ); m->p += 2; return x; }
 uint32_t msgpack_get_UINT32( msgpack_u *m ) 	{ uint32_t x = BYTESWAP32( *( uint32_t* )++m->p ); m->p += 4; return x; }
@@ -413,7 +409,7 @@ int8_t   msgpack_get_FIX( msgpack_u *m ) 		{ return ( *m->p > 128 ) ? *( int8_t*
 #define FIX_INT 1
 #define FIX_UINT 0
 
-#define CREATE_UNPACK( T, S ) \
+#define DEFINE_INT_UNPACK( T, S ) \
 	MSGPACKF MSGPACK_ERR msgpack_unpack_##T( msgpack_u *m, T##_t *x ) { \
 		const int t = msgpack_unpack_peek( m ); \
 		if      (( t == MSGPACK_##S##64 ) && ( sizeof( T##_t ) >= 8 )) *x = msgpack_get_##S##64( m ); \
@@ -424,15 +420,14 @@ int8_t   msgpack_get_FIX( msgpack_u *m ) 		{ return ( *m->p > 128 ) ? *( int8_t*
 		else return MSGPACK_TYPEERR; \
 		return MSGPACK_SUCCESS; \
 	}
-
-CREATE_UNPACK( int64, INT )
-CREATE_UNPACK( int32, INT )
-CREATE_UNPACK( int16, INT )
-CREATE_UNPACK( int8, INT )
-CREATE_UNPACK( uint64, UINT )
-CREATE_UNPACK( uint32, UINT )
-CREATE_UNPACK( uint16, UINT )
-CREATE_UNPACK( uint8, UINT )
+DEFINE_INT_UNPACK( int64, INT )
+DEFINE_INT_UNPACK( int32, INT )
+DEFINE_INT_UNPACK( int16, INT )
+DEFINE_INT_UNPACK( int8, INT )
+DEFINE_INT_UNPACK( uint64, UINT )
+DEFINE_INT_UNPACK( uint32, UINT )
+DEFINE_INT_UNPACK( uint16, UINT )
+DEFINE_INT_UNPACK( uint8, UINT )
 
 MSGPACKF MSGPACK_ERR msgpack_unpack_fix( msgpack_u *m, int8_t *x )
 {
@@ -440,8 +435,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_fix( msgpack_u *m, int8_t *x )
 	*x = msgpack_get_FIX( m );
 	return MSGPACK_SUCCESS;
 }
-
-#undef CREATE_UNPACK
+#undef DEFINE_INT_UNPACK
 #undef FIX_UINT
 #undef FIX_INT
 

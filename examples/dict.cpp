@@ -15,9 +15,9 @@ int main( )
 	pack_dict d1, d2;
 	
 	// create a simple dictionary
-	d2.pack("foo",-3).pack("yyz",3.141f);
+	d2.pack("foo",-65537).pack("yyz",3.141f);
 	// pack it into another dictionary
-	d1.pack("test","foo").pack("bar",4).pack("msg",d2);
+	d1.pack("test","foo").pack("bar",-(1ll<<33)).pack("msg",d2);
 	
 	// turn it into a string and print it
 	std::string str = d1.string();
