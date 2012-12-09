@@ -17,7 +17,7 @@ int main( )
 	pack_dict d1, d2;
 	// pack a nested dictionary example
 	d2.pack("foo",1).pack("yyz",3.141);
-	d1.pack("test","foo").pack("bar",2).pack("msg",d2);
+	d1.pack("test","foo").pack("bar",-2).pack("msg",d2);
 	std::string str = d1.string();
 	
 	// print to screen
@@ -27,10 +27,10 @@ int main( )
 	
 	// unpack the nested dicts and print their key names
 	unpack_dict u1( str ), u2;
-	u1.get("msg",u2);
 	cout << "dict u1 contains entries ";
 	for ( unpack_dict::const_iterator i = u1.begin(); i != u1.end(); ++i )
 		cout << "'" << i->first << "' ";
+	u1.get("msg",u2);
 	cout << endl << "dict u2 contains entries ";
 	for ( unpack_dict::const_iterator i = u2.begin(); i != u2.end(); ++i )
 		cout << "'" << i->first << "' ";

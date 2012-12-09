@@ -33,15 +33,24 @@ msgpackalt.c : function implementations
 		#define BYTESWAP64   bswap_64
 	#endif
 	/* pointer-based byte-swapping */
+	#define		BYTESWAP8( x )	( x )
+	/*
 	INLINE void BSWAP8( const void* src, void* dest )	{ *( uint8_t* )dest = *( uint8_t* )src; }
 	INLINE void BSWAP16( const void* src, void* dest )	{ *( uint16_t* )dest = BYTESWAP16( *( uint16_t* )src ); }
 	INLINE void BSWAP32( const void* src, void* dest )	{ *( uint32_t* )dest = BYTESWAP32( *( uint32_t* )src ); }
 	INLINE void BSWAP64( const void* src, void* dest )	{ *( uint64_t* )dest = BYTESWAP64( *( uint64_t* )src ); }
+	*/
 #elif __BIG_ENDIAN__ /* already network-endian */
+	#define		BYTESWAP8( x )	( x )
+	#define		BYTESWAP16( x )	( x )
+	#define		BYTESWAP32( x )	( x )
+	#define		BYTESWAP64( x )	( x )
+	/*
 	INLINE void BSWAP8( const void* src, void* dest )	{ *( uint8_t* )dest = *( uint8_t* )src; }
 	INLINE void BSWAP16( const void* src, void* dest )	{ *( uint16_t* )dest = *( uint16_t* )src; }
 	INLINE void BSWAP32( const void* src, void* dest )	{ *( uint32_t* )dest = *( uint32_t* )src; }
 	INLINE void BSWAP64( const void* src, void* dest )	{ *( uint64_t* )dest = *( uint64_t* )src; }
+	*/
 #else
 	#error Unsupported endian-ness
 #endif
@@ -129,10 +138,10 @@ INLINE MSGPACK_ERR msgpack_copy_bits( const void *src, void* dest, byte n )
 	if ( src && dest )
 		switch ( n ) {
 			case 0:     break;
-			case 1:     BSWAP8( src, dest ); break;
-			case 2:     BSWAP16( src, dest ); break;
-			case 4:     BSWAP32( src, dest ); break;
-			case 8:     BSWAP64( src, dest ); break;
+			case 1:     *( uint8_t* )dest = BYTESWAP8( *( uint8_t* )src ); break;
+			case 2:     *( uint16_t* )dest = BYTESWAP8( *( uint16_t* )src ); break;
+			case 4:     *( uint32_t* )dest = BYTESWAP8( *( uint32_t* )src ); break;
+			case 8:     *( uint64_t* )dest = BYTESWAP8( *( uint64_t* )src ); break;
 			default:    return MSGPACK_ARGERR;
 		}
 	return MSGPACK_SUCCESS;
@@ -288,7 +297,7 @@ MSGPACKF int msgpack_unpack_skip( msgpack_u *m )
 		case MSGPACK_NULL:
 		case MSGPACK_FALSE:
 		case MSGPACK_TRUE:
-			m->p += 1;
+			++m->p;
 			break;
 		case MSGPACK_UINT8:
 		case MSGPACK_INT8:
@@ -393,14 +402,14 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_null( msgpack_u *m )
 MSGPACKF int msgpack_unpack_bool( msgpack_u *m )
 {
 	UNPACK_CHK( m );
-	switch ( *m->p++ ) {
-		case MSGPACK_TRUE:  return 1;
-		case MSGPACK_FALSE: return 0;
-		default:            --m->p; return MSGPACK_TYPEERR;
+	switch ( *m->p ) {
+		case MSGPACK_TRUE:  ++m->p; return 1;
+		case MSGPACK_FALSE: ++m->p; return 0;
+		default:            return MSGPACK_TYPEERR;
 	}
 }
 
-#define DO_UNPACK( m, type, x, sw ) { sw( ++m->p, x ); m->p += sizeof(type); return MSGPACK_SUCCESS; }
+#define DO_UNPACK( m, x, n ) 		{ *x = BYTESWAP##n(*++m->p); m->p += n/8; return MSGPACK_SUCCESS; }
 #define DO_UNPACK_FIX( m, x )       { *x = ( *m->p > 128 ) ? ( int8_t )*m->p : *m->p; ++m->p; return MSGPACK_SUCCESS; }
 #define DO_UNPACK_UFIX( m, x )      if ( *m->p >> 7 == 0 ) { *x = *m->p; ++m->p; return MSGPACK_SUCCESS; }
 
@@ -413,10 +422,10 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_fix( msgpack_u *m, int8_t *x )  {
 MSGPACKF MSGPACK_ERR msgpack_unpack_int64( msgpack_u *m, int64_t *x )
 {
 	switch ( msgpack_unpack_peek( m )) {
-		case MSGPACK_INT64:     DO_UNPACK( m, int64_t, x, BSWAP64 );
-		case MSGPACK_INT32:     DO_UNPACK( m, int32_t, x, BSWAP32 );
-		case MSGPACK_INT16:     DO_UNPACK( m, int16_t, x, BSWAP16 );
-		case MSGPACK_INT8:      DO_UNPACK( m, int8_t, x, BSWAP8 );
+		case MSGPACK_INT64:     DO_UNPACK( m, x, 64 );
+		case MSGPACK_INT32:     DO_UNPACK( m, x, 32 );
+		case MSGPACK_INT16:     DO_UNPACK( m, x, 16 );
+		case MSGPACK_INT8:      DO_UNPACK( m, x, 8 );
 		case MSGPACK_FIX:       DO_UNPACK_FIX( m,x );
 		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
 		default: break;
@@ -426,9 +435,9 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_int64( msgpack_u *m, int64_t *x )
 MSGPACKF MSGPACK_ERR msgpack_unpack_int32( msgpack_u *m, int32_t *x )
 {
 	switch ( msgpack_unpack_peek( m )) {
-		case MSGPACK_INT32:     DO_UNPACK( m, int32_t, x, BSWAP32 );
-		case MSGPACK_INT16:     DO_UNPACK( m, int16_t, x, BSWAP16 );
-		case MSGPACK_INT8:      DO_UNPACK( m, int8_t, x, BSWAP8 );
+		case MSGPACK_INT32:     DO_UNPACK( m, x, 32 );
+		case MSGPACK_INT16:     DO_UNPACK( m, x, 16 );
+		case MSGPACK_INT8:      DO_UNPACK( m, x, 8 );
 		case MSGPACK_FIX:       DO_UNPACK_FIX( m,x );
 		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
 		default: break;
@@ -438,8 +447,8 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_int32( msgpack_u *m, int32_t *x )
 MSGPACKF MSGPACK_ERR msgpack_unpack_int16( msgpack_u *m, int16_t *x )
 {
 	switch ( msgpack_unpack_peek( m )) {
-		case MSGPACK_INT16:     DO_UNPACK( m, int16_t, x, BSWAP16 );
-		case MSGPACK_INT8:      DO_UNPACK( m, int8_t, x, BSWAP8 );
+		case MSGPACK_INT16:     DO_UNPACK( m, x, 16 );
+		case MSGPACK_INT8:      DO_UNPACK( m, x, 8 );
 		case MSGPACK_FIX:       DO_UNPACK_FIX( m,x );
 		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
 		default: break;
@@ -449,7 +458,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_int16( msgpack_u *m, int16_t *x )
 MSGPACKF MSGPACK_ERR msgpack_unpack_int8( msgpack_u *m, int8_t *x )
 {
 	switch ( msgpack_unpack_peek( m )) {
-		case MSGPACK_INT8:      DO_UNPACK( m, int8_t, x, BSWAP8 );
+		case MSGPACK_INT8:      DO_UNPACK( m, x, 8 );
 		case MSGPACK_FIX:       DO_UNPACK_FIX( m,x );
 		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
 		default: break;
@@ -460,10 +469,10 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_int8( msgpack_u *m, int8_t *x )
 MSGPACKF MSGPACK_ERR msgpack_unpack_uint64( msgpack_u *m, uint64_t *x )
 {
 	switch ( msgpack_unpack_peek( m )) {
-		case MSGPACK_UINT64:    DO_UNPACK( m, uint64_t, x, BSWAP64 );
-		case MSGPACK_UINT32:    DO_UNPACK( m, uint32_t, x, BSWAP32 );
-		case MSGPACK_UINT16:    DO_UNPACK( m, uint16_t, x, BSWAP16 );
-		case MSGPACK_UINT8:     DO_UNPACK( m, uint8_t, x, BSWAP8 );
+		case MSGPACK_UINT64:    DO_UNPACK( m, x, 64 );
+		case MSGPACK_UINT32:    DO_UNPACK( m, x, 32 );
+		case MSGPACK_UINT16:    DO_UNPACK( m, x, 16 );
+		case MSGPACK_UINT8:     DO_UNPACK( m, x, 8 );
 		case MSGPACK_FIX:       DO_UNPACK_UFIX( m,x );
 		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
 		default: break;
@@ -473,9 +482,9 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_uint64( msgpack_u *m, uint64_t *x )
 MSGPACKF MSGPACK_ERR msgpack_unpack_uint32( msgpack_u *m, uint32_t *x )
 {
 	switch ( msgpack_unpack_peek( m )) {
-		case MSGPACK_UINT32:    DO_UNPACK( m, uint32_t, x, BSWAP32 );
-		case MSGPACK_UINT16:    DO_UNPACK( m, uint16_t, x, BSWAP16 );
-		case MSGPACK_UINT8:     DO_UNPACK( m, uint8_t, x, BSWAP8 );
+		case MSGPACK_UINT32:    DO_UNPACK( m, x, 32 );
+		case MSGPACK_UINT16:    DO_UNPACK( m, x, 16 );
+		case MSGPACK_UINT8:     DO_UNPACK( m, x, 8 );
 		case MSGPACK_FIX:       DO_UNPACK_UFIX( m,x );
 		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
 		default: break;
@@ -485,8 +494,8 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_uint32( msgpack_u *m, uint32_t *x )
 MSGPACKF MSGPACK_ERR msgpack_unpack_uint16( msgpack_u *m, uint16_t *x )
 {
 	switch ( msgpack_unpack_peek( m )) {
-		case MSGPACK_UINT16:    DO_UNPACK( m, uint16_t, x, BSWAP16 );
-		case MSGPACK_UINT8:     DO_UNPACK( m, uint8_t, x, BSWAP8 );
+		case MSGPACK_UINT16:    DO_UNPACK( m, x, 16 );
+		case MSGPACK_UINT8:     DO_UNPACK( m, x, 8 );
 		case MSGPACK_FIX:       DO_UNPACK_UFIX( m,x );
 		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
 		default: break;
@@ -496,7 +505,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_uint16( msgpack_u *m, uint16_t *x )
 MSGPACKF MSGPACK_ERR msgpack_unpack_uint8( msgpack_u *m, uint8_t *x )
 {
 	switch ( msgpack_unpack_peek( m )) {
-		case MSGPACK_UINT8:     DO_UNPACK( m, uint8_t, x, BSWAP8 );
+		case MSGPACK_UINT8:     DO_UNPACK( m, x, 8 );
 		case MSGPACK_FIX:       DO_UNPACK_UFIX( m,x );
 		case MSGPACK_MEMERR:	return MSGPACK_MEMERR;
 		default: break;
@@ -511,7 +520,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_float( msgpack_u *m, float *x )
 {
 	UNPACK_CHK( m );
 	if ( *m->p != MSGPACK_FLOAT )  return MSGPACK_TYPEERR;
-	BSWAP32( ++m->p, x ); m->p += sizeof( float );
+	*( uint32_t* )x = BYTESWAP32( *++m->p ); m->p += sizeof( float );
 	return MSGPACK_SUCCESS;
 }
 MSGPACKF MSGPACK_ERR msgpack_unpack_double( msgpack_u *m, double *x )
@@ -520,9 +529,14 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_double( msgpack_u *m, double *x )
 	UNPACK_CHK( m );
 	switch ( *m->p ) {
 		case MSGPACK_DOUBLE:
-			BSWAP64( ++m->p, x ); m->p += sizeof( double ); return MSGPACK_SUCCESS;
+			*( uint64_t* )x = BYTESWAP64( *++m->p );
+			m->p += sizeof( double );
+			return MSGPACK_SUCCESS;
 		case MSGPACK_FLOAT:
-			BSWAP32( ++m->p, &y ); *x = y; m->p += sizeof( float ); return MSGPACK_SUCCESS;
+			*( uint32_t* )&y = BYTESWAP32( *++m->p );
+			*x = y;
+			m->p += sizeof( float );
+			return MSGPACK_SUCCESS;
 	}
 	return MSGPACK_TYPEERR;
 }

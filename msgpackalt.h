@@ -3,9 +3,11 @@
 MSGPACKALT :: a simple binary serialisation library
 http://code.google.com/p/msgpackalt
 ----------------------------------------------------------------------
-prototypes of msgpackalt library functions implementing the
-"Message Pack" protocol, available at
-http://wiki.msgpack.org/display/MSGPACK/Format+specification
+*/
+/** \file msgpackalt.h
+ *  \brief Prototypes the msgpackalt library functions implementing the "Message Pack" protocol
+
+The MessagePack protocol is specified at http://wiki.msgpack.org/display/MSGPACK/Format+specification
 
 use preprocessor definitions
 	MSGPACK_INLINE to include definitions and compile inline
@@ -16,7 +18,6 @@ to be defined to determine host byte order for byte swapping
 
 further documentation and examples are available at:
 http://code.google.com/p/msgpackalt
-----------------------------------------------------------------------
 */
 #ifndef MSGPACK_H
 #define MSGPACK_H
@@ -60,14 +61,16 @@ typedef uint8_t byte;
 
 
 /* **************************************** MSGPACK DEFINITIONS **************************************** */
-typedef enum { 				/* -ve values indicate error */
-	MSGPACK_SUCCESS = 0,	/* no problem */
-	MSGPACK_TYPEERR = -1,	/* type code did not match expected value */
-	MSGPACK_MEMERR = -2,	/* out of memory error */
-	MSGPACK_ARGERR = -3		/* received unexpected argument */
+/// Enum returned by msgpackalt functions to denote error or success (-ve value indicates error)
+typedef enum {
+	MSGPACK_SUCCESS = 0,	///< no problem
+	MSGPACK_TYPEERR = -1,	///< type code did not match expected value
+	MSGPACK_MEMERR = -2,	///< out of memory error
+	MSGPACK_ARGERR = -3		///< received unexpected argument
 } MSGPACK_ERR;
 
-typedef enum { /* byte codes indicating types: NB fix, raw, array and map have multiple codes */
+/// Enum containing types defined by the MessagePack protocol
+typedef enum {
 	MSGPACK_FIX     = 0x7f,		/* fixnums are integers between (-32, 128) */
 	MSGPACK_NULL    = 0xc0,
 	MSGPACK_FALSE   = 0xc2,
@@ -87,34 +90,37 @@ typedef enum { /* byte codes indicating types: NB fix, raw, array and map have m
 	MSGPACK_MAP     = 0xde
 } MSGPACK_TYPE_CODES;
 
+/// The msgpackalt packer object
 typedef struct {
-	uint32_t max;           /* size of allocated buffer */
-	byte *p, *buffer;       /* pointer to current location, start of buffer */
+	uint32_t max; 	///< Size of allocated buffer
+	byte *p; 		///< Pointer to current place in buffer
+	byte *buffer; 	///< Pointer to start of buffer
 } msgpack_p;
 
+/// The msgpackalt unpacker object
 typedef struct {
-	uint32_t max;           /* size of allocated buffer */
-	const byte *p, *end;    /* pointer to current location, end of buffer */
-	byte flags;
+	uint32_t max; 	///< Size of allocated buffer
+	const byte *p; 	///< Pointer to current location in buffer
+	const byte *end;///< Pointer to end of buffer
+	byte flags;		///< Flags for memory management
 } msgpack_u;
 
 
 /* **************************************** MEMORY FUNCTIONS **************************************** */
+/// Create a packer (msgpack_p) object, allocate some memory and return a pointer 
 MSGPACKF msgpack_p* msgpack_pack_init( );
-/* create a packer (msgpack_p) object, allocate some memory and return a pointer */
 
+/// Free the packer object and its associated memory. do not reference *m after calling this function */
 MSGPACKF MSGPACK_ERR msgpack_pack_free( msgpack_p *m );
-/* free the packer object and its associated memory. do not reference *m after calling this function */
 
+/// Return the current length of the packed buffer */
 MSGPACKF uint32_t msgpack_get_len( const msgpack_p *m );
-/* return the current length of the packed buffer */
 
+/// Stores a pointer to the buffer memory in "data" and the length of the packed buffer in "n". do not modify the buffer directly */
 MSGPACKF MSGPACK_ERR msgpack_get_buffer( msgpack_p *m, const byte ** data, uint32_t *n );
-/* stores a pointer to the buffer memory in "data" and the length of the packed buffer in "n". do not modify the buffer directly */
 
+/// Copies the internal buffer into the user-specified buffer "data" with length "max", returning the number of bytes copied. */
 MSGPACKF uint32_t msgpack_copy_to( const msgpack_p *m, void *data, uint32_t max );
-/* copies the internal buffer into the user-specified buffer "data" with length "max", returning the number of bytes copied.
-	note that if the buffer is to small to contain the packed message, no copy is performed.  */
 
 /* **************************************** PACKING FUNCTIONS **************************************** */
 /* the packing function pack the given variable into the buffer. if the value can be stored in a smaller
