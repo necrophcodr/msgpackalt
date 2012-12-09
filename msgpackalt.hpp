@@ -30,24 +30,34 @@ namespace msgpackalt {
  *	MSGPACK_TYPEERR: function call does not match the expected type code
  *	                    throws std::out_of_range
  *	MSGPACK_MEMERR:  failed to allocate sufficient memory for the operation
- *	                    throws std::bad_alloc
+ *	                    throws std::runtime_error
  *	MSGPACK_ARGERR:  function called with invalid argument
  *						throws std::invalid_argument
  *	other error:     received negative return code, but unknown cause
- *						throws std::bad_exception
+ *						throws std::exception
  */	
-INLINE void msgpack_assert( MSGPACK_ERR code )
+INLINE void msgpack_assert( MSGPACK_ERR code, const char* f )
 {
 	if ( code < MSGPACK_SUCCESS ) 	// error codes are negative
+	{
+		char buffer[128];
 		if ( code == MSGPACK_TYPEERR )
-			throw std::out_of_range("Unexpected type code");
-		else if ( code == MSGPACK_MEMERR )
-			throw std::bad_alloc();
-		else if ( code == MSGPACK_ARGERR )
-			throw std::invalid_argument("Invalid argument");
-		else
-			throw std::bad_exception();
+		{
+			snprintf( buffer, 128, "Unexpected type code in %s", f );
+			throw std::out_of_range(buffer);
+		} else if ( code == MSGPACK_MEMERR ) {
+			snprintf( buffer, 128, "Memory allocation/access error in %s", f );
+			throw std::runtime_error(buffer);
+		} else if ( code == MSGPACK_ARGERR ) {
+			snprintf( buffer, 128, "Invalid argument passed inside %s", f );
+			throw std::invalid_argument(buffer);
+		} else {
+			snprintf( buffer, 128, "Unknown error code %i during %s", code, f );
+			throw std::range_error(buffer);
+		}
+	}
 }
+#define MSGPACK_ASSERT(x) msgpack_assert(x,__PRETTY_FUNCTION__)
 
 /// The serialisation class which packs data in the MessagePack format
 class packer {
@@ -68,52 +78,52 @@ class packer {
 		void clear( )							{ if ( this->m ) m->p = m->buffer; }
 		
 		/// LOW-LEVEL: specifies an array is to follow, with elements consisting of the next "n" packing calls.
-		void start_array( uint32_t n )			{ msgpack_assert( msgpack_pack_array( this->m, n )); }
+		void start_array( uint32_t n )			{ MSGPACK_ASSERT( msgpack_pack_array( this->m, n )); }
 		/// LOW-LEVEL: specifies a map is to follow, with "n" sets of keys and values consisting of the next 2*n calls.
-		void start_map( uint32_t n )			{ msgpack_assert( msgpack_pack_map( this->m, n )); }
+		void start_map( uint32_t n )			{ MSGPACK_ASSERT( msgpack_pack_map( this->m, n )); }
 		
 		// *********************************** PACKING FUNCTIONS ***********************************
 		/// Pack a boolean value
-		packer& operator<<( bool b )            { msgpack_assert( msgpack_pack_bool( this->m, b )); return *this; }
+		packer& operator<<( bool b )            { MSGPACK_ASSERT( msgpack_pack_bool( this->m, b )); return *this; }
 		/// Pack an 8-bit unsigned int
-		packer& operator<<( const uint8_t &x )  { msgpack_assert( msgpack_pack_uint8( this->m, x )); return *this; }
+		packer& operator<<( const uint8_t &x )  { MSGPACK_ASSERT( msgpack_pack_uint8( this->m, x )); return *this; }
 		/// Pack a 16-bit unsigned int
-		packer& operator<<( const uint16_t &x ) { msgpack_assert( msgpack_pack_uint16( this->m, x )); return *this; }
+		packer& operator<<( const uint16_t &x ) { MSGPACK_ASSERT( msgpack_pack_uint16( this->m, x )); return *this; }
 		/// Pack a 32-bit unsigned int
-		packer& operator<<( const uint32_t &x ) { msgpack_assert( msgpack_pack_uint32( this->m, x )); return *this; }
+		packer& operator<<( const uint32_t &x ) { MSGPACK_ASSERT( msgpack_pack_uint32( this->m, x )); return *this; }
 		/// Pack a 64-bit unsigned int
-		packer& operator<<( const uint64_t &x ) { msgpack_assert( msgpack_pack_uint64( this->m, x )); return *this; }
+		packer& operator<<( const uint64_t &x ) { MSGPACK_ASSERT( msgpack_pack_uint64( this->m, x )); return *this; }
 		
 		/// Pack an 8-bit signed int
-		packer& operator<<( const int8_t &x )   { msgpack_assert( msgpack_pack_int8( this->m, x )); return *this; }
+		packer& operator<<( const int8_t &x )   { MSGPACK_ASSERT( msgpack_pack_int8( this->m, x )); return *this; }
 		/// Pack a 16-bit signed int
-		packer& operator<<( const int16_t &x )  { msgpack_assert( msgpack_pack_int16( this->m, x )); return *this; }
+		packer& operator<<( const int16_t &x )  { MSGPACK_ASSERT( msgpack_pack_int16( this->m, x )); return *this; }
 		/// Pack a 32-bit signed int
-		packer& operator<<( const int32_t &x )  { msgpack_assert( msgpack_pack_int32( this->m, x )); return *this; }
+		packer& operator<<( const int32_t &x )  { MSGPACK_ASSERT( msgpack_pack_int32( this->m, x )); return *this; }
 		/// Pack a 64-bit signed int
-		packer& operator<<( const int64_t &x )  { msgpack_assert( msgpack_pack_int64( this->m, x )); return *this; }
+		packer& operator<<( const int64_t &x )  { MSGPACK_ASSERT( msgpack_pack_int64( this->m, x )); return *this; }
 		
 		/// Pack a 32-bit float
-		packer& operator<<( const float &x )    { msgpack_assert( msgpack_pack_float( this->m, x )); return *this; }
+		packer& operator<<( const float &x )    { MSGPACK_ASSERT( msgpack_pack_float( this->m, x )); return *this; }
 		/// Pack a double (64-bit float)
-		packer& operator<<( const double &x )   { msgpack_assert( msgpack_pack_double( this->m, x )); return *this; }
+		packer& operator<<( const double &x )   { MSGPACK_ASSERT( msgpack_pack_double( this->m, x )); return *this; }
 		
 		/// Pack a std::string as raw data
 		packer& operator<<( const std::string &s ) 
-			{ msgpack_assert( msgpack_pack_str( this->m, s.c_str( ))); return *this; }
+			{ MSGPACK_ASSERT( msgpack_pack_str( this->m, s.c_str( ))); return *this; }
 		/// Pack a C-style string as raw data
 		packer& operator<<( const char *s )
-			{ msgpack_assert( msgpack_pack_str( this->m, s )); return *this; }
+			{ MSGPACK_ASSERT( msgpack_pack_str( this->m, s )); return *this; }
 		/// Pack "n" bytes of raw data specified by the given pointer
 		packer& pack_raw( const void* data, const uint32_t n )
-			{ msgpack_assert( msgpack_pack_raw( this->m, ( const byte* )data, n )); return *this; }
+			{ MSGPACK_ASSERT( msgpack_pack_raw( this->m, ( const byte* )data, n )); return *this; }
 		/// Pack the "null" object
 		packer& pack_null( )
-			{ msgpack_assert( msgpack_pack_null( this->m )); return *this; }
+			{ MSGPACK_ASSERT( msgpack_pack_null( this->m )); return *this; }
 		
 		/// Append the contents of another packer object
 		packer& operator<<( const packer &p )
-			{ const byte* b = NULL; uint32_t n = 0; msgpack_get_buffer( p.m, &b, &n ); msgpack_assert( msgpack_pack_append( this->m, b, n )); return *this; }
+			{ const byte* b = NULL; uint32_t n = 0; msgpack_get_buffer( p.m, &b, &n ); MSGPACK_ASSERT( msgpack_pack_append( this->m, b, n )); return *this; }
 		
 		/// Pack a C-style array of "n" points starting at the pointer "v"
 		template<class T> packer& pack_array( const T* v, const uint32_t n )
@@ -130,6 +140,8 @@ class packer {
 		msgpack_p *m;
 		friend class unpacker;
 		
+		
+	
 	private:
 		/// Pointers are not reference counted, so prevent automatic copies. Use the << operator to append instead.
 		packer& operator=( const packer& P );
@@ -167,7 +179,7 @@ class unpacker {
 			{ this->u->end = this->u->p = this->u->end - this->u->max; }
 		/// Append data to the end of the buffer, e.g. streaming data, and return the total size of the buffer (not necessarily bytes remaining to be unpacked)
 		uint32_t append( const byte *data, uint32_t len )
-			{ msgpack_assert( msgpack_unpack_append( this->u, data, len )); return this->u->max; }
+			{ MSGPACK_ASSERT( msgpack_unpack_append( this->u, data, len )); return this->u->max; }
 		/// Throw away the current buffer and copy the given data
 		void set( const byte *data, uint32_t len )
 			{ this->clear( ); this->append( data, len ); }
@@ -177,33 +189,33 @@ class unpacker {
 		
 		// *********************************** UNPACKING FUNCTIONS ***********************************
 		/// Unpack a boolean value
-		unpacker& operator>>( bool &b )         { int x = msgpack_unpack_bool( this->u ); b = x > 0; msgpack_assert(( MSGPACK_ERR )x ); return *this; }
+		unpacker& operator>>( bool &b )         { int x = msgpack_unpack_bool( this->u ); b = x > 0; MSGPACK_ASSERT(( MSGPACK_ERR )x ); return *this; }
 
 		/// Unpack an 8-bit unsigned int
-		unpacker& operator>>( uint8_t &x )      { msgpack_assert( msgpack_unpack_uint8( this->u, &x )); return *this; }
+		unpacker& operator>>( uint8_t &x )      { MSGPACK_ASSERT( msgpack_unpack_uint8( this->u, &x )); return *this; }
 		/// Unpack a 16-bit unsigned int
-		unpacker& operator>>( uint16_t &x )     { msgpack_assert( msgpack_unpack_uint16( this->u, &x )); return *this; }
+		unpacker& operator>>( uint16_t &x )     { MSGPACK_ASSERT( msgpack_unpack_uint16( this->u, &x )); return *this; }
 		/// Unpack a 32-bit unsigned int
-		unpacker& operator>>( uint32_t &x )     { msgpack_assert( msgpack_unpack_uint32( this->u, &x )); return *this; }
+		unpacker& operator>>( uint32_t &x )     { MSGPACK_ASSERT( msgpack_unpack_uint32( this->u, &x )); return *this; }
 		/// Unpack a 64-bit unsigned int
-		unpacker& operator>>( uint64_t &x )     { msgpack_assert( msgpack_unpack_uint64( this->u, &x )); return *this; }
+		unpacker& operator>>( uint64_t &x )     { MSGPACK_ASSERT( msgpack_unpack_uint64( this->u, &x )); return *this; }
 		
 		/// Unpack an 8-bit signed int
-		unpacker& operator>>( int8_t &x )       { msgpack_assert( msgpack_unpack_int8( this->u, &x )); return *this; }
+		unpacker& operator>>( int8_t &x )       { MSGPACK_ASSERT( msgpack_unpack_int8( this->u, &x )); return *this; }
 		/// Unpack a 16-bit signed int
-		unpacker& operator>>( int16_t &x )      { msgpack_assert( msgpack_unpack_int16( this->u, &x )); return *this; }
+		unpacker& operator>>( int16_t &x )      { MSGPACK_ASSERT( msgpack_unpack_int16( this->u, &x )); return *this; }
 		/// Unpack a 32-bit signed int
-		unpacker& operator>>( int32_t &x )      { msgpack_assert( msgpack_unpack_int32( this->u, &x )); return *this; }
+		unpacker& operator>>( int32_t &x )      { MSGPACK_ASSERT( msgpack_unpack_int32( this->u, &x )); return *this; }
 		/// Unpack a 64-bit signed int
-		unpacker& operator>>( int64_t &x )      { msgpack_assert( msgpack_unpack_int64( this->u, &x )); return *this; }
+		unpacker& operator>>( int64_t &x )      { MSGPACK_ASSERT( msgpack_unpack_int64( this->u, &x )); return *this; }
 		
 		/// Unpack a U8 value
-		unpacker& operator>>( float &x )        { msgpack_assert( msgpack_unpack_float( this->u, &x )); return *this; }
+		unpacker& operator>>( float &x )        { MSGPACK_ASSERT( msgpack_unpack_float( this->u, &x )); return *this; }
 		/// Unpack a U8 value
-		unpacker& operator>>( double &x )       { msgpack_assert( msgpack_unpack_double( this->u, &x )); return *this; }
+		unpacker& operator>>( double &x )       { MSGPACK_ASSERT( msgpack_unpack_double( this->u, &x )); return *this; }
 		
 		/// Unpack raw data into a std::string
-		unpacker& operator>>( std::string &s )  { const byte* b; uint32_t n; msgpack_assert( msgpack_unpack_raw( this->u, &b, &n )); s = std::string(( const char* )b, n ); return *this; }
+		unpacker& operator>>( std::string &s )  { const byte* b; uint32_t n; MSGPACK_ASSERT( msgpack_unpack_raw( this->u, &b, &n )); s = std::string(( const char* )b, n ); return *this; }
 		
 		/// Unpack a vector of homogeneous (single typed) data into the given STL vector
 		template<class T> unpacker& operator>>( std::vector<T> &v )
@@ -213,9 +225,9 @@ class unpacker {
 			{ uint32_t n = start_map( ); T x; U y; v.clear( ); for ( uint32_t i = 0; i < n; ++i ) { *this >> x >> y; v[x]=y; } return *this; }
 		
 		/// LOW-LEVEL: Expect the next object to be the start of an array. Return the number of entries N, comprising the next N unpack calls.
-		uint32_t start_array( )		{ uint32_t n; msgpack_assert( msgpack_unpack_array( this->u, &n )); return n; }
+		uint32_t start_array( )		{ uint32_t n; MSGPACK_ASSERT( msgpack_unpack_array( this->u, &n )); return n; }
 		/// LOW-LEVEL: Expect the next object to be the start of a map. Return the number of (key,value) pairs N, comprising the next 2*N unpack calls.
-		uint32_t start_map( )		{ uint32_t n; msgpack_assert( msgpack_unpack_map( this->u, &n )); return n; }
+		uint32_t start_map( )		{ uint32_t n; MSGPACK_ASSERT( msgpack_unpack_map( this->u, &n )); return n; }
 		
 	protected:
 		/// Underlying C unpacker object
@@ -340,4 +352,5 @@ class unpack_dict {
 
 } // namespace
 
+#undef MSGPACK_ASSERT
 #endif
