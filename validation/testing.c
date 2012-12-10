@@ -19,6 +19,7 @@ Generates python script "testing.py" for debugging errors
 #include "msgpackalt.h"
 #include <stdio.h>
 #include <float.h>
+#include <limits.h>
 
 const char test1[] = { 0xe1, 0xd0, 0xe0, 0x7f, 0xd0, 0x81, 0xd1, 0xff, 0x80, 0xd1, 0x80, 0x01, 0xd2, 0xff, 0xff, 0x80, 0x00, 0xd2, 0x80, 0x00, 0x00, 0x01, 0xd3, 0xff, 0xff, 0xff, 0xff, 0x80, 0x00, 0x00, 0x00, 0x7f,
 						0xcc, 0x80, 0xcc, 0xff, 0xcd, 0x01, 0x00, 0xcd, 0xff, 0xff, 0xce, 0x00, 0x01, 0x00, 0x00, 0xce, 0xff, 0xff, 0xff, 0xff, 0xcf, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00 };
@@ -43,9 +44,10 @@ void printhex( byte* buffer, size_t l ) {
 
 void pyprint( FILE *fp, const char* name, byte* buffer, size_t l ) {
 	size_t i;
-	fprintf( fp, "%s = msgpack.Unpacker('", name );
+	fprintf( fp, "%s = msgpack.Unpacker(StringIO('", name );
 	for ( i = 0; i < l; ++i ) fprintf( fp, "\\x%02x", buffer[i] );
-	fprintf( fp, "')\n" );
+	fprintf( fp, "'))\n" );
+	fprintf( fp, "print '%s contains ', tuple(%s)\n", name, name );
 }
 
 #define CHK_PACK(p,l,n) 			printf( ">> %s\n", ( l != sizeof( test##n ) || memcmp( p->buffer, test##n, l ))&&++nfailp ? "FAILED PACK TEST" : "Passed pack test" );
@@ -67,7 +69,7 @@ int main( )
 	size_t l, nfailp = 0, nfailu = 0, n = 0;
 	
 	FILE *fpy = fopen( "testing.c.py","w" );
-	fprintf( fpy, "import msgpack\n" );
+	fprintf( fpy, "import msgpack\nfrom StringIO import StringIO\n" );
 	puts( "*************** MSGPACKALT TESTING ***************\n" );
 	
 	// *************** INTEGERS ***************
