@@ -157,7 +157,7 @@ DEFINE_INT_PACK( uint16, UINT16, x<(1u<<8), uint8 )
 DEFINE_INT_PACK( uint32, UINT32, x<(1ul<<16), uint16 )
 DEFINE_INT_PACK( uint64, UINT64, x<(1ull<<32), uint32 )
 
-DEFINE_INT_PACK( int8,  INT8,  x>-32,  fix )
+DEFINE_INT_PACK( int8,  INT8,  x>-32, fix )
 DEFINE_INT_PACK( int16, INT16, (x>-1<<7)&&(x<1<<7), int8 )
 DEFINE_INT_PACK( int32, INT32, (x>-1l<<15)&&(x<1l<<15), int16 )
 DEFINE_INT_PACK( int64, INT64, (x>-1ll<<31)&&(x<1ll<<31), int32 )
@@ -180,7 +180,7 @@ INLINE MSGPACK_ERR msgpack_pack_arr_head( msgpack_p *m, byte c1, byte c2, uint32
 	else
 		return msgpack_pack_internal( m, c2+1, &n, 4 );
 }
-MSGPACKF MSGPACK_ERR msgpack_pack_raw( msgpack_p* m, const byte *data, uint32_t n )
+MSGPACKF MSGPACK_ERR msgpack_pack_raw( msgpack_p* m, const void *data, uint32_t n )
 {
 	if ( msgpack_pack_arr_head( m, 0xa0, MSGPACK_RAW, n )) return MSGPACK_TYPEERR;
 	if ( msgpack_expand( m, n )) return MSGPACK_MEMERR;
@@ -369,6 +369,7 @@ MSGPACKF int msgpack_unpack_peek( const msgpack_u *m )
 	if (( b >> 5 == 5 )||( b == MSGPACK_RAW )||( b == MSGPACK_RAW+1 )) return MSGPACK_RAW;
 	if (( b >> 4 == 8 )||( b == MSGPACK_MAP )||( b == MSGPACK_MAP+1 )) return MSGPACK_MAP;
 	if (( b >> 4 == 9 )||( b == MSGPACK_ARRAY )||( b == MSGPACK_ARRAY+1 )) return MSGPACK_ARRAY;
+	if (( b == MSGPACK_FALSE ) || ( b == MSGPACK_TRUE )) return MSGPACK_BOOL;
 	/* must be one of the enumeration */
 	return b;
 }

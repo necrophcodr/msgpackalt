@@ -74,6 +74,7 @@ typedef enum {
 	MSGPACK_FIX     = 0x7f,		/* fixnums are integers between (-32, 128) */
 	MSGPACK_NULL    = 0xc0,
 	MSGPACK_FALSE   = 0xc2,
+	MSGPACK_BOOL	= MSGPACK_FALSE,
 	MSGPACK_TRUE    = 0xc3,
 	MSGPACK_FLOAT   = 0xca,
 	MSGPACK_DOUBLE  = 0xcb,
@@ -143,7 +144,7 @@ MSGPACKF MSGPACK_ERR msgpack_pack_uint64( msgpack_p *m, uint64_t x );
 MSGPACKF MSGPACK_ERR msgpack_pack_float( msgpack_p *m, float x );
 MSGPACKF MSGPACK_ERR msgpack_pack_double( msgpack_p *m, double x );
 /* array types ------------------------- */
-MSGPACKF MSGPACK_ERR msgpack_pack_raw( msgpack_p* m, const byte *data, uint32_t n );
+MSGPACKF MSGPACK_ERR msgpack_pack_raw( msgpack_p* m, const void *data, uint32_t n );
 MSGPACKF MSGPACK_ERR msgpack_pack_str( msgpack_p* m, const char *str );   /* convenience wrapper for msgpack_pack_raw taking n=strlen */
 MSGPACKF MSGPACK_ERR msgpack_pack_array( msgpack_p* m, uint32_t n );
 MSGPACKF MSGPACK_ERR msgpack_pack_map( msgpack_p* m, uint32_t n );
