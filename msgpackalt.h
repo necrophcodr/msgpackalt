@@ -172,6 +172,10 @@ MSGPACKF uint32_t msgpack_unpack_len( msgpack_u *m );
 MSGPACKF MSGPACK_ERR msgpack_unpack_append( msgpack_u *m, const void* data, const uint32_t n );
 /* appends more data to the end of the buffer for unpacking */
 
+MSGPACKF uint32_t msgpack_unpack_getpos( msgpack_u *m );
+/* get the position of the unpacker in the current bytestream */
+MSGPACKF uint32_t msgpack_unpack_setpos( msgpack_u *m, uint32_t pos );
+/* move the unpacker to a position in the bytestream */
 
 /* the unpacking functions check whether the next object in the buffer can be unpacked
 into the specified data type. if possible without data loss, relevant conversion is performed.

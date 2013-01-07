@@ -106,9 +106,10 @@ MSGPACKF uint32_t msgpack_get_len( const msgpack_p *m )
 
 MSGPACKF MSGPACK_ERR msgpack_get_buffer( msgpack_p *m, const byte ** data, uint32_t *n )
 {
+	*n = 0; *data = NULL;
 	PTR_CHK( m );
-	*data = m->buffer;
 	*n = m->p - m->buffer;
+	if ( *n ) *data = m->buffer;
 	return MSGPACK_SUCCESS;
 }
 
@@ -338,14 +339,15 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_append( msgpack_u *m, const void* data, cons
 {
 	byte *buffer;
 	uint32_t n0;
-	if ( !m || !m->p || !data || !n ) return MSGPACK_ARGERR;
+	if ( !m || !data || !n ) return MSGPACK_ARGERR;
+	if ( m->p + n < m->end ) return MSGPACK_SUCCESS; /* don't need to do anything */
 	/* allocate a new buffer to contain appended message */
 	n0 = m->end - m->p;
 	/* create new buffer */
 	buffer = ( byte* )malloc( n0 + n );
 	if ( !buffer ) return MSGPACK_MEMERR;
 	/* copy the old buffer into the new one */
-	memcpy( buffer, m->p, n0 );
+	if ( n0 ) memcpy( buffer, m->p, n0 );
 	/* deallocate the old buffer if necesary */
 	if ( m->flags & 1 ) free(( void* )( m->end - m->max ));
 	/* copy the new segment into the new buffer */
@@ -362,7 +364,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_append( msgpack_u *m, const void* data, cons
 MSGPACKF int msgpack_unpack_peek( const msgpack_u *m )
 {
 	byte b;
-	if ( !m || ( m->p >= m->end )) return MSGPACK_MEMERR;
+	if ( !m || !m->p || ( m->p >= m->end )) return MSGPACK_MEMERR;
 	b = *m->p;
 	/* check the FIXNUM codes */
 	if (( b >> 7 == 0 )||( b >> 5 == 7 )) return MSGPACK_FIX;
@@ -375,6 +377,19 @@ MSGPACKF int msgpack_unpack_peek( const msgpack_u *m )
 }
 
 #define UNPACK_CHK(m) if (( !m ) || ( m->p >= m->end )) return MSGPACK_MEMERR;
+
+MSGPACKF uint32_t msgpack_unpack_getpos( msgpack_u *m )
+{
+	if ( !m || !m->p ) return 0;
+	return m->max - ( m->end - m->p );
+}
+MSGPACKF uint32_t msgpack_unpack_setpos( msgpack_u *m, uint32_t pos )
+{
+	uint32_t old = msgpack_unpack_getpos( m );
+	if ( !m || !m->p ) return 0;
+	m->p = m->end - ( m->max - pos );
+	return old;
+}
 
 MSGPACKF uint32_t msgpack_unpack_len( msgpack_u *m )
 {

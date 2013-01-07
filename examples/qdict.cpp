@@ -1,12 +1,11 @@
-#include <iostream>
-using std::cout;
-using std::endl;
-
 #define MSGPACK_INLINE
+#define MSGPACK_QT
 #include "msgpackalt.hpp"
 using namespace msgpackalt;
 
-typedef std::map<std::string, package> pack_dict;
+#include <QHash>
+typedef QHash<QByteArray,package> pack_dict;
+#include <QDebug>
 
 int main( )
 {
@@ -20,14 +19,13 @@ int main( )
 	d1["test"] << "foobar";
 	d1["bar"] << -(1ll<<33);
 	d1["msg"] << d2;
+	qDebug( "*** Demonstrating QT nested dicts ***" );
 	packd << d1;
 	
 	// turn it into a string and print it
-	std::string str = packd.string();
-	cout << "*** Demonstrating nested dicts ***" << endl;
-	for ( std::string::const_iterator i = str.begin(); i != str.end(); ++i )
-		printf( "%02x", ( byte )*i ); /* that's just annoying to do with iostream */
-	cout << endl << endl;
+	QByteArray str = packd.string( );
+	qDebug() << str.toHex( );
+	qDebug() << "";
 	
 	// unpack the nested dicts and print their key names
 	unpacker unpackd( str );
@@ -36,23 +34,23 @@ int main( )
 	u1["msg"] >> u2;
 	
 	// print the keys to screen
-	cout << "dict u1 contains entries ";
+	qDebug( "Dict u1 contains entries:" );
 	for ( pack_dict::const_iterator i = u1.begin(); i != u1.end(); ++i )
-		cout << "'" << i->first << "' ";
-	cout << endl << "dict u2 contains entries ";
+		qDebug() << " -" << i.key( );
+	qDebug( "Dict u2 contains entries:" );
 	for ( pack_dict::const_iterator i = u2.begin(); i != u2.end(); ++i )
-		cout << "'" << i->first << "' ";
-	cout << endl << endl;
+		qDebug() << " -" << i.key( );
+	qDebug() << "";
 	
 	// extract individual elements
-	int64_t foo; int64_t bar; double yyz; std::string test;
+	long long foo; int64_t bar; double yyz; QByteArray test;
 	u1["test"] >> test;
-	cout << "test = " << test << endl;
+	qDebug() << "test =" << test;
 	u1["bar"] >> bar;
-	cout << "bar  = " << bar << endl;
+	qDebug() << "bar  =" << bar;
 	u2["foo"] >> foo;
-	cout << "foo  = " << foo << endl;
+	qDebug() << "foo  =" << foo;
 	u2["yyz"] >> yyz;
-	cout << "yyz  = " << yyz << endl;
+	qDebug() << "yyz  =" << yyz;
 	return 0;
 }
