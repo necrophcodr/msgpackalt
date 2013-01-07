@@ -26,7 +26,7 @@ http://code.google.com/p/msgpackalt
 	#include <string>
 	#include <map>
 	#include <vector>
-	#include <cstdio>	/* snprintf */
+	#include <cstdio>		/* snprintf */
 #endif
 #include <stdexcept>
 
@@ -332,6 +332,11 @@ class package {
 			data = malloc( len );
 			memcpy( data, ptr, len );
 			n = len;
+		}
+		
+		MSGPACK_TYPE_CODES type( ) const 	{
+			if ( !data ) return MSGPACK_NULL;
+			return ( MSGPACK_TYPE_CODES )msgpack_unpack_peek_code( *( byte* )data );
 		}
 		
 		/// Extract a single object from the stream

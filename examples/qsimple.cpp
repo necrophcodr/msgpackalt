@@ -18,7 +18,7 @@ int main( )
 	qDebug( "***** Simple example, QT version *****" );
 	
 	packer p;
-	p << 12345u << "pi" << 3.14159 << -9876543210;
+	p << 12345u << QString( "pi" ).toAscii() << 3.14159 << -9876543210;
 	
 	QByteArray data = p.string( );
 	qDebug() << data.toHex( );

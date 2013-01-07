@@ -361,11 +361,8 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_append( msgpack_u *m, const void* data, cons
 	return MSGPACK_SUCCESS;
 }
 
-MSGPACKF int msgpack_unpack_peek( const msgpack_u *m )
+MSGPACKF int msgpack_unpack_peek_code( byte b )
 {
-	byte b;
-	if ( !m || !m->p || ( m->p >= m->end )) return MSGPACK_MEMERR;
-	b = *m->p;
 	/* check the FIXNUM codes */
 	if (( b >> 7 == 0 )||( b >> 5 == 7 )) return MSGPACK_FIX;
 	if (( b >> 5 == 5 )||( b == MSGPACK_RAW )||( b == MSGPACK_RAW+1 )) return MSGPACK_RAW;
@@ -374,6 +371,14 @@ MSGPACKF int msgpack_unpack_peek( const msgpack_u *m )
 	if (( b == MSGPACK_FALSE ) || ( b == MSGPACK_TRUE )) return MSGPACK_BOOL;
 	/* must be one of the enumeration */
 	return b;
+}
+
+MSGPACKF int msgpack_unpack_peek( const msgpack_u *m )
+{
+	if ( !m || !m->p || ( m->p >= m->end ))
+		return MSGPACK_MEMERR;
+	else
+		return msgpack_unpack_peek_code( *m->p );
 }
 
 #define UNPACK_CHK(m) if (( !m ) || ( m->p >= m->end )) return MSGPACK_MEMERR;

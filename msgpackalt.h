@@ -165,6 +165,7 @@ MSGPACKF MSGPACK_ERR msgpack_unpack_free( msgpack_u *m );
 
 MSGPACKF int msgpack_unpack_peek( const msgpack_u *m );
 /* returns the type code of the next object stored in the buffer */
+MSGPACKF int msgpack_unpack_peek_code( byte b );
 
 MSGPACKF uint32_t msgpack_unpack_len( msgpack_u *m );
 /* return the number of bytes in the buffer remaining to be unpacked */
